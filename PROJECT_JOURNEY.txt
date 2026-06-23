@@ -1,0 +1,150 @@
+================================================================================
+PROJECT JOURNEY — HTML ANIMATION → MP4 EXPORTER
+================================================================================
+
+Last updated: 2026-05-27
+
+--------------------------------------------------------------------------------
+1. THE CORE IDEA (what I'm trying to build)
+--------------------------------------------------------------------------------
+
+I want a web app where:
+
+  1. The user uploads (or pastes) a self-contained HTML file that contains
+     some kind of animation — could be CSS animation, SVG, DOM/JS animation,
+     a <canvas> 2D animation, or a WebGL/Three.js scene.
+  2. The app renders that HTML inside a preview iframe so the user can see
+     it running live.
+  3. The user picks an export resolution (e.g. 720p / 1080p), frame rate
+     (e.g. 30 / 60 fps) and duration (e.g. 5–30 seconds).
+  4. The user clicks "Export" and the app produces a real MP4 video file
+     of that animation — exactly matching what they see in the preview —
+     entirely in the browser (no server, no ffmpeg.wasm round-trip if
+     avoidable, no external service).
+  5. They download the MP4.
+
+Two capture "modes" are exposed:
+
+  - QUICK MODE      → records the animation in real time (what you see is
+                      what you get). Should work for ANY animation type,
+                      including canvas/WebGL.
+  - HIGH QUALITY    → frame-stepped / deterministic. Injects a virtual
+    (FRAME-STEPPED)   clock into the iframe so each frame is rendered at
+                      an exact timestamp. Smoother, no dropped frames —
+                      but only works for animations that respect the
+                      virtualized time APIs (rAF, setTimeout, Date.now,
+                      performance.now).
+
+Tech stack actually in use:
+  - TanStack Start (React 19 + Vite 7) for the app shell
+  - html2canvas for DOM rasterization
+  - WebCodecs (VideoEncoder) + mp4-muxer for in-browser MP4 encoding
+  - A custom virtual-time shim injected into the iframe for High Quality mode
+  - A WebGL preserveDrawingBuffer shim injected for Quick mode
+
+--------------------------------------------------------------------------------
+2. WHY THIS IS HARD (the real problems under the hood)
+--------------------------------------------------------------------------------
+
+  - html2canvas rasterizes the DOM by re-parsing CSS — it CANNOT read the
+    pixels of a <canvas> or <video> element directly. So for WebGL / 2D
+    canvas animations, naive html2canvas snapshots come out blank or static.
+  - WebGL contexts default to preserveDrawingBuffer:false, which means
+    after the GPU composites a frame, the back-buffer is cleared.
+    drawImage(canvas, …) then reads black/empty pixels.
+  - html2canvas is SLOW (often 100–400ms per frame at 1080p). While it
+    runs, it blocks the main thread, which means the iframe's rAF loop
+    can't tick. Naive real-time capture therefore produces near-identical
+    frames.
+  - Virtual-time shims can't catch every animation API — Web Audio
+    scheduling, libraries that cached the original setTimeout before the
+    shim ran, GPU-driven shader time uniforms, etc.
+  - WebCodecs encoders can emit chunks out of presentation order; manual
+    timestamp handling is fragile.
+  - At 1080p60 for long durations, memory + CPU pressure causes the tab
+    to reload or freeze.
+
+--------------------------------------------------------------------------------
+3. PROGRESS TABLE  (step → status → what worked → what broke → fix applied)
+--------------------------------------------------------------------------------
+
+| # | Step / Feature                          | Status      | What works                                    | Error / Symptom encountered                                                                 | Fix applied                                                                                              |
+|---|-----------------------------------------|-------------|-----------------------------------------------|---------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|
+| 1 | App shell + routing (TanStack Start)    | DONE        | Home, About, MethodPicker UI render fine.     | —                                                                                           | —                                                                                                        |
+| 2 | HTML upload + iframe preview            | DONE        | User can drop an .html file and see it run.   | —                                                                                           | —                                                                                                        |
+| 3 | MP4 encoder (WebCodecs + mp4-muxer)     | MOSTLY DONE | Produces a playable .mp4 at chosen W/H/fps.   | Early: frames sometimes out-of-order; manual chunk copy was fragile.                        | Switched to passing VideoFrame timestamps + durations; added VFR timestamps in Quick mode.               |
+| 4 | High Quality mode (frame-stepped)       | WORKS for   | CSS / SVG / DOM / simple JS animations export | Animations using Web Audio, cached timers, or GPU time uniforms freeze or don't advance.    | Inject virtual-time shim in <head> BEFORE user scripts. Advance vtime from 0. Detect identical frames    |
+|   |                                         | most cases  | smoothly, no dropped frames, true FPS.        |                                                                                             | and throw a clear "use Quick mode" error instead of silently shipping a still-image MP4.                 |
+| 5 | Quick mode v1 (real-time snapshots)     | BROKEN      | Ran without crashing.                         | "All captured frames look identical" — html2canvas blocked the thread, animations froze.    | Rewrote loop to yield real wall-clock time between snapshots so the iframe's rAF can tick.               |
+| 6 | Quick mode v2 (VFR timestamps)          | IMPROVED    | Real CSS/DOM animations now move in the MP4.  | Canvas / WebGL pages STILL came out as a frozen first frame.                                | Added inspectIframeMedia() to detect a dominant fullscreen <canvas>; draw it directly via drawImage      |
+|   |                                         |             |                                               |                                                                                             | bypassing html2canvas entirely. Mixed DOM+canvas pages composite html2canvas + live canvases.            |
+| 7 | Quick mode v3 (WebGL fix)               | IMPROVED    | three.js / WebGL demos now show motion.       | Many WebGL demos STILL produced identical frames — preserveDrawingBuffer was false.         | Injected canvasPreserveShim() into the iframe BEFORE user scripts so every getContext('webgl'|'webgl2')  |
+|   |                                         |             |                                               |                                                                                             | call gets preserveDrawingBuffer:true. drawImage() can now read the back-buffer.                          |
+| 8 | Identical-frame detection / diagnostics | DONE        | App now refuses to ship a frozen MP4 and      | Old behavior: silently exported a 1-frame MP4 and called it a success.                      | Hash sampled frames at checkpoints; if all hashes collide, throw a clear, mode-specific error message    |
+|   |                                         |             | tells the user WHY (cross-origin, frozen      |                                                                                             | suggesting the other mode. Tracks dropped frames too.                                                    |
+|   |                                         |             | animation, unsupported API, etc.).            |                                                                                             |                                                                                                          |
+| 9 | Cancellation + cleanup                  | PARTIAL     | Cancel signal honored in both modes.          | Reusable output canvas was leaking memory across runs; long renders sometimes reload tab.   | Single shared _outCanvas; encoder.cancel() on throw. Still need hard guardrails for 1080p60 long runs.   |
+| 10| UI copy / About page                    | PARTIAL     | Method descriptions updated to match reality. | Old copy referenced MediaRecorder / ffmpeg.wasm — neither is used.                          | Updated MethodPicker.tsx and routes/about.tsx. A final wording pass is still pending.                    |
+| 11| 1080p / 60fps / long durations          | NOT SOLVED  | Works at 720p/30fps, short clips.             | Tab reload / OOM / extremely slow encode at heavy settings.                                 | PLANNED: cap unsafe combos, warn the user, aggressively release VideoFrames between encodes.             |
+| 12| Cross-origin / tainted canvas handling  | DETECTED    | Clean error message shown to user.            | drawImage throws SecurityError; nothing we can do from JS-land.                             | Surface the real reason instead of a generic "frames identical" error.                                   |
+
+Legend: DONE = shipped & verified · IMPROVED = better but edge cases remain ·
+PARTIAL = working baseline, polish pending · BROKEN/NOT SOLVED = open issue.
+
+--------------------------------------------------------------------------------
+4. CURRENT KNOWN-GOOD MATRIX (what reliably exports today)
+--------------------------------------------------------------------------------
+
+                          | Quick mode | High Quality (frame-stepped)
+--------------------------+------------+------------------------------
+Pure CSS animation        |   YES      |   YES
+SVG animation (SMIL/CSS)  |   YES      |   YES
+DOM + JS (rAF timers)     |   YES      |   YES
+<canvas> 2D animation     |   YES      |   Often NO (drawImage blank
+                          |            |   without preserve shim path)
+WebGL / three.js          |   YES *    |   Usually NO
+Video element playback    |   YES      |   NO (real video clock)
+Web Audio-driven visuals  |   Partial  |   NO
+
+* WebGL works in Quick mode now thanks to the preserveDrawingBuffer shim,
+  provided the page is same-origin (srcdoc is, so this is the normal case).
+
+--------------------------------------------------------------------------------
+5. OPEN ISSUES / NEXT STEPS
+--------------------------------------------------------------------------------
+
+  [ ] Hard guardrails + clear warning for 1080p @ 60fps long renders.
+  [ ] Memory: explicitly close() VideoFrames after encode; null out canvases.
+  [ ] Split progress UI into preparing / capturing / encoding / finalizing
+      with dropped-frame count visible during Quick mode.
+  [ ] Final copy pass on MethodPicker + About page to remove any remaining
+      references to MediaRecorder / ffmpeg.
+  [ ] Optional: fall back to a MediaRecorder pipeline if WebCodecs is
+      unavailable (Safari).
+  [ ] Optional: an audio capture path (currently video only).
+
+--------------------------------------------------------------------------------
+6. KEY FILES (where the logic lives)
+--------------------------------------------------------------------------------
+
+  src/lib/capture.ts          — both capture modes, shims, snapshot logic,
+                                identical-frame detection, diagnostics.
+  src/lib/webcodecs-mp4.ts    — WebCodecs VideoEncoder + mp4-muxer wrapper.
+  src/routes/index.tsx        — main page: upload, preview, export controls.
+  src/components/MethodPicker — Quick vs High Quality selector + copy.
+  src/routes/about.tsx        — user-facing explanation of the two modes.
+  .amity/plan.md            — engineering plan / rationale (living doc).
+
+--------------------------------------------------------------------------------
+7. ONE-LINE SUMMARY (for pasting into another AI)
+--------------------------------------------------------------------------------
+
+"In-browser tool that takes a user-uploaded HTML animation (CSS/SVG/DOM/
+canvas/WebGL) and exports it as a real MP4 using WebCodecs + mp4-muxer,
+with two modes: Quick (real-time snapshots, VFR timestamps, WebGL
+preserveDrawingBuffer shim, html2canvas fallback for DOM) and High Quality
+(virtual-time shim + frame-stepped deterministic render). Quick mode now
+handles WebGL; High Quality is reliable for CSS/SVG/DOM but not for
+canvas/WebGL/audio-driven animations. Remaining work: guardrails for
+1080p60 long renders, memory cleanup, UI copy polish."
+================================================================================

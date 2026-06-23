@@ -1,0 +1,49 @@
+# Logs
+# Crash dumps and debug files
+*.stackdump
+grep.exe.stackdump
+
+# Test / scratch files
+test-anim.html
+test-capture.cjs
+test-capture.js
+test_render.mp4
+capture_restored.ts
+
+# Large source video files (only public/ copies are needed)
+logo animation.mp4
+logo codeframe.mp4
+CodeFrame logo part 2.mp4
+
+
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+.output
+.vinxi
+.tanstack/**
+.nitro
+*.local
+
+# Wrangler / Cloudflare
+.wrangler/
+.dev.vars
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
