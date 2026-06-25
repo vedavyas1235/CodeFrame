@@ -6,6 +6,14 @@ import domToImageRaw from "dom-to-image-more/dist/dom-to-image-more.min.js?raw";
 export const TIME_SHIM = `
   window.__VTIME_INSTALLED__ = true;
   var vtime = 0;
+  
+  window.__nativeSetTimeout = window.setTimeout;
+  window.__nativeClearTimeout = window.clearTimeout;
+  window.__nativeSetInterval = window.setInterval;
+  window.__nativeClearInterval = window.clearInterval;
+  window.__nativeDate = window.Date;
+  window.__nativePerformance = window.performance;
+
   var _origDate = Date;
   window.Date = function() {
     if (arguments.length === 0) return new _origDate(vtime);
@@ -205,7 +213,11 @@ export function loadIframeWithHtml(
       const safeDomToImage = domToImageRaw.replace(/<\/script>/gi, '<\\/script>');
       const injection = `
         <script>${TIME_SHIM}</script>
-        <script>${safeDomToImage}</script>
+        <script>
+          (function(setTimeout, setInterval, clearTimeout, clearInterval, Date, performance) {
+            ${safeDomToImage}
+          })(window.__nativeSetTimeout, window.__nativeSetInterval, window.__nativeClearTimeout, window.__nativeClearInterval, window.__nativeDate, window.__nativePerformance);
+        </script>
         <script>${CAPTURE_AGENT}</script>
       `;
       finalHtml = html.replace(/<head[^>]*>/i, (m) => m + injection);
