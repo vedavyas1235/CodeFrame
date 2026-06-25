@@ -1,4 +1,4 @@
-import domToImageRaw from "dom-to-image-more/dist/dom-to-image-more.min.js?raw";
+import htmlToImageRaw from "html-to-image/dist/html-to-image.js?raw";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TIME SHIM — injected into the iframe to give us synthetic clock control
@@ -124,7 +124,7 @@ window.addEventListener('message', async (e) => {
         
         bitmap = await createImageBitmap(srcCanvas);
       } else if (mode === 'hq') {
-        if (!window.domtoimage) throw new Error("dom-to-image not loaded inside iframe.");
+        if (!window.htmlToImage) throw new Error("html-to-image not loaded inside iframe.");
         
         document.documentElement.style.width = width + 'px';
         document.documentElement.style.height = height + 'px';
@@ -136,7 +136,7 @@ window.addEventListener('message', async (e) => {
         }
         window.scrollTo(0, 0);
 
-        const blob = await window.domtoimage.toBlob(document.documentElement, {
+        const blob = await window.htmlToImage.toBlob(document.documentElement, {
           width,
           height,
           style: { transform: 'scale(1)', transformOrigin: 'top left' },
@@ -209,13 +209,13 @@ export function loadIframeWithHtml(
   return new Promise((resolve) => {
     let finalHtml = html;
     if (needShim) {
-      // Escape </script> tags in domToImageRaw to prevent breaking the injected script block
-      const safeDomToImage = domToImageRaw.replace(/<\/script>/gi, '<\\/script>');
+      // Escape </script> tags in htmlToImageRaw to prevent breaking the injected script block
+      const safeHtmlToImage = htmlToImageRaw.replace(/<\/script>/gi, '<\\/script>');
       const injection = `
         <script>${TIME_SHIM}</script>
         <script>
           (function(setTimeout, setInterval, clearTimeout, clearInterval, Date, performance) {
-            ${safeDomToImage}
+            ${safeHtmlToImage}
           })(window.__nativeSetTimeout, window.__nativeSetInterval, window.__nativeClearTimeout, window.__nativeClearInterval, window.__nativeDate, window.__nativePerformance);
         </script>
         <script>${CAPTURE_AGENT}</script>
