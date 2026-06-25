@@ -29,6 +29,7 @@ export const TIME_SHIM = `
 
   var rafCallbacks = []; var rafId = 0;
   window.__origRaf = window.requestAnimationFrame;
+  window.__origCancelRaf = window.cancelAnimationFrame;
   window.requestAnimationFrame = function(cb){ rafId++; rafCallbacks.push({id: rafId, cb: cb}); return rafId; };
   window.cancelAnimationFrame = function(id){ rafCallbacks = rafCallbacks.filter(function(x){ return x.id !== id; }); };
 
@@ -214,9 +215,9 @@ export function loadIframeWithHtml(
       const injection = `
         <script>${TIME_SHIM}</script>
         <script>
-          (function(setTimeout, setInterval, clearTimeout, clearInterval, Date, performance) {
+          (function(setTimeout, setInterval, clearTimeout, clearInterval, Date, performance, requestAnimationFrame, cancelAnimationFrame) {
             ${safeHtmlToImage}
-          })(window.__nativeSetTimeout, window.__nativeSetInterval, window.__nativeClearTimeout, window.__nativeClearInterval, window.__nativeDate, window.__nativePerformance);
+          })(window.__nativeSetTimeout, window.__nativeSetInterval, window.__nativeClearTimeout, window.__nativeClearInterval, window.__nativeDate, window.__nativePerformance, window.__origRaf, window.__origCancelRaf);
         </script>
         <script>${CAPTURE_AGENT}</script>
       `;
