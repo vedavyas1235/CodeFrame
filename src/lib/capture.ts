@@ -137,13 +137,22 @@ window.addEventListener('message', async (e) => {
         }
         window.scrollTo(0, 0);
 
+        if (typeof window.__cachedFontCss === 'undefined') {
+          try {
+            window.__cachedFontCss = await window.htmlToImage.getFontEmbedCSS(document.documentElement);
+          } catch(e) {
+            window.__cachedFontCss = '';
+          }
+        }
+
         const blob = await window.htmlToImage.toBlob(document.documentElement, {
           width,
           height,
+          pixelRatio: 1,
           style: { transform: 'scale(1)', transformOrigin: 'top left' },
           quality: 1.0,
-          cacheBust: true,
-          bgcolor: null,
+          backgroundColor: 'transparent',
+          fontEmbedCSS: window.__cachedFontCss,
           filter: (node) => {
             if (node.tagName && node.tagName.toUpperCase() === 'IFRAME') return false;
             return true;
@@ -153,7 +162,7 @@ window.addEventListener('message', async (e) => {
         const domSnap = await createImageBitmap(blob);
         const off = new OffscreenCanvas(width, height);
         const ctx = off.getContext('2d');
-        ctx.drawImage(domSnap, 0, 0);
+        ctx.drawImage(domSnap, 0, 0, width, height);
         domSnap.close();
         
         const canvases = Array.from(document.querySelectorAll("canvas"));
