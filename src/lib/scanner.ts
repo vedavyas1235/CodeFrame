@@ -7,7 +7,7 @@ export function analyzeHtmlForStudioMode(html: string): HtmlAnalysis {
   const reasons: string[] = [];
   
   // Check for external GSAP or Anime.js
-  if (/gsap\.min\.js/i.test(html) || /gsap/i.test(html) && /<script/i.test(html)) {
+  if ((/gsap\.min\.js/i.test(html) || /gsap/i.test(html)) && /<script/i.test(html)) {
     reasons.push("GSAP library detected (Requires Studio Mode for perfect timing)");
   }
   if (/anime\.min\.js/i.test(html) || /animejs/i.test(html)) {

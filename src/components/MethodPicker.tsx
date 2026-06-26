@@ -43,12 +43,21 @@ const methods: {
 type Props = {
   value: RecordMethod;
   onChange: (m: RecordMethod) => void;
+  hasWebCodecs?: boolean;
 };
 
-export function MethodPicker({ value, onChange }: Props) {
+export function MethodPicker({ value, onChange, hasWebCodecs = true }: Props) {
   return (
     <div className="grid gap-3">
-      {methods.map((m) => {
+      {methods.map((baseMethod) => {
+        const m = { ...baseMethod };
+        // Disable local methods if WebCodecs are not supported
+        if (!hasWebCodecs && (m.id === "realtime" || m.id === "tabcapture")) {
+          m.disabled = true;
+          m.badge = "Unsupported";
+          m.body = m.body + " Please use Google Chrome or Microsoft Edge to unlock this feature.";
+        }
+
         const Icon = m.icon;
         const selected = value === m.id;
         return (
@@ -68,6 +77,7 @@ export function MethodPicker({ value, onChange }: Props) {
                 className={cn(
                   "mt-0.5 flex h-9 w-9 items-center justify-center rounded-lg shrink-0",
                   selected ? "bg-primary text-primary-foreground" : "bg-secondary text-foreground",
+                  m.disabled && "opacity-50"
                 )}
               >
                 <Icon className="h-4 w-4" />
@@ -82,7 +92,7 @@ export function MethodPicker({ value, onChange }: Props) {
                         m.id === "studio"
                           ? "border-primary bg-primary/10 text-primary"
                           : m.disabled
-                            ? "border-border text-muted-foreground"
+                            ? "border-destructive/30 text-destructive bg-destructive/10"
                             : "border-primary/40 text-primary",
                       )}
                     >

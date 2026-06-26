@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { PromptInfo } from "./PromptInfo";
+import { PromptInfoHQ } from "./PromptInfoHQ";
 
 export function SiteHeader() {
   return (
@@ -27,6 +28,7 @@ export function SiteHeader() {
             About
           </Link>
           <PromptInfo />
+          <PromptInfoHQ />
         </nav>
       </div>
     </header>

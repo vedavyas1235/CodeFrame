@@ -200,6 +200,9 @@ export interface CaptureProgress {
 
 export interface CaptureSignal {
   cancelled: boolean;
+  abortController?: AbortController;
+  jobId?: string;
+  cancelEndpoint?: string;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -273,6 +276,7 @@ function checkIframeMedia(iframe: HTMLIFrameElement): Promise<{ hasFullscreenCan
     if (!win) return resolve({ hasFullscreenCanvas: false });
     
     const handler = (e: MessageEvent) => {
+      if (e.source !== win) return;
       if (e.data?.type === 'media-checked') {
         window.removeEventListener('message', handler);
         resolve({ hasFullscreenCanvas: e.data.hasFullscreenCanvas });
@@ -300,6 +304,7 @@ function requestIframeFrame(
     if (!win) return reject(new Error("Iframe window unavailable."));
     
     const handler = (e: MessageEvent) => {
+      if (e.source !== win) return;
       if (e.data?.type === 'frame-captured') {
         window.removeEventListener('message', handler);
         if (e.data.error) reject(new Error(e.data.error));
@@ -458,7 +463,19 @@ export async function renderStudioMp4(
 ): Promise<Blob> {
   onProgress({ stage: "preparing", message: "Uploading to Studio Backend..." });
 
-  const endpoint = import.meta.env.VITE_STUDIO_BACKEND_URL || "https://vedavyas1235-animateit.hf.space/api/render";
+  const endpoint = "/api/render";
+  const cancelEndpoint = "/api/cancel";
+
+  const jobId = Math.random().toString(36).substring(2, 15);
+  if (signal) {
+    signal.jobId = jobId;
+    signal.cancelEndpoint = cancelEndpoint;
+  }
+
+  const abortController = new AbortController();
+  if (signal) {
+    signal.abortController = abortController;
+  }
 
   const response = await fetch(endpoint, {
     method: "POST",
@@ -473,7 +490,9 @@ export async function renderStudioMp4(
       panX: opts.panX,
       panY: opts.panY,
       exportScale: opts.exportScale,
+      jobId
     }),
+    signal: abortController.signal,
   });
 
   if (!response.ok) {

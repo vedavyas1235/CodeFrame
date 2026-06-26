@@ -84,7 +84,11 @@ function AboutPage() {
               </div>
               <div className="bg-muted/50 rounded-lg p-3 text-sm">
                 <strong className="text-foreground block mb-1">Note / Limitations</strong>
-                Since we are consciously putting effort into updating the backend models, 3D animations (WebGL/Three.js) are currently not supported in Studio Mode. Please do not attempt to export 3D canvases through Studio.
+                <p className="mb-2">Since we are consciously putting effort into updating the backend models, 3D animations (WebGL/Three.js) are currently not supported in Studio Mode. Please do not attempt to export 3D canvases through Studio.</p>
+                <ul className="list-disc pl-5">
+                  <li>No YouTube embeds.</li>
+                  <li>No audio extraction.</li>
+                </ul>
               </div>
             </div>
           </Section>

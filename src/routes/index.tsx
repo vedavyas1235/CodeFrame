@@ -64,14 +64,8 @@ function StudioPage() {
   const [busy, setBusy] = useState(false);
   const [outUrl, setOutUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [hasWebCodecs, setHasWebCodecs] = useState<boolean>(true);
 
-  const iframeRef = useRef<HTMLIFrameElement>(null);
-  const signalRef = useRef<CaptureSignal>({ cancelled: false });
-  const viewStateRef = useRef({ zoom: 1, panX: 0, panY: 0 });
-
-  // Compute actual output resolution from picker + orientation
-  // We lock the HTML layout canvas to exactly 1920x1080 (or 1080x1920).
-  // Choosing 4K just renders this exact 1080p canvas at a 2x pixel density scale!
   const baseWidth = 1920;
   const baseHeight = 1080;
   const res =
@@ -80,6 +74,21 @@ function StudioPage() {
       : { width: baseWidth, height: baseHeight };
       
   const exportScale = RESOLUTIONS[resIdx].scale;
+
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  const signalRef = useRef<CaptureSignal>({ cancelled: false });
+  const viewStateRef = useRef({ zoom: 1, panX: res.width / 2, panY: res.height / 2 });
+
+  // Update view state center when orientation changes so it doesn't get stuck
+  useEffect(() => {
+    viewStateRef.current = { zoom: 1, panX: res.width / 2, panY: res.height / 2 };
+  }, [res.width, res.height]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && !window.VideoEncoder) {
+      setHasWebCodecs(false);
+    }
+  }, []);
 
   // Load preview HTML into iframe whenever html changes (no shim for preview)
   useEffect(() => {
@@ -92,6 +101,16 @@ function StudioPage() {
       if (outUrl) URL.revokeObjectURL(outUrl);
     };
   }, [outUrl]);
+
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (signalRef.current.jobId && signalRef.current.cancelEndpoint) {
+        navigator.sendBeacon(`${signalRef.current.cancelEndpoint}/${signalRef.current.jobId}`);
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, []);
 
   const reset = () => {
     setFileName(null);
@@ -119,7 +138,7 @@ function StudioPage() {
     if (!html || !iframeRef.current) return;
 
     // Block Quick Mode for complex DOM animations
-    if (method === "realtime" && analysis && (!analysis.hasCanvas || analysis.hasDomElements)) {
+    if (method === "realtime" && analysis?.requiresStudio) {
       toast.error("Complex animation detected", {
         description: "Quick Mode only supports pure Canvas animations. Please select High Quality or Studio Mode to capture DOM text and CSS.",
         duration: 5000,
@@ -193,6 +212,12 @@ function StudioPage() {
 
   function handleCancel() {
     signalRef.current.cancelled = true;
+    if (signalRef.current.abortController) {
+      signalRef.current.abortController.abort();
+    }
+    if (signalRef.current.jobId && signalRef.current.cancelEndpoint) {
+      navigator.sendBeacon(`${signalRef.current.cancelEndpoint}/${signalRef.current.jobId}`);
+    }
   }
 
   const progressPercent = progress?.total
@@ -305,9 +330,18 @@ function StudioPage() {
 
             {/* Right column: settings — scrollable sidebar */}
             <aside className="h-full overflow-y-auto px-5 py-5 space-y-4">
+              {!hasWebCodecs && (
+                <Alert variant="destructive" className="bg-destructive/10 border-destructive/20 text-destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription className="mt-1 text-xs">
+                    Your browser does not support local video encoding (WebCodecs). Quick Mode and High Quality Mode will fail. Please use <strong>Studio Mode</strong> or switch to Chrome/Edge.
+                  </AlertDescription>
+                </Alert>
+              )}
+
               <div>
                 <h3 className="font-display text-xl mb-3">Capture mode</h3>
-                <MethodPicker value={method} onChange={setMethod} />
+                <MethodPicker value={method} onChange={setMethod} hasWebCodecs={hasWebCodecs} />
               </div>
 
               <div className="space-y-5 rounded-xl border border-border bg-card p-5">
@@ -481,7 +515,7 @@ function StudioPage() {
                 size="lg"
                 className="w-full"
                 onClick={handleConvert}
-                disabled={busy || method === "server"}
+                disabled={busy}
               >
                 {busy ? (
                   <>

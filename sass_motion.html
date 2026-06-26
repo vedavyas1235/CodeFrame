@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UNFILTERED — Motion Reel</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@100;400;700;900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --orange: #FF5500;
+    --amber: #FF8C00;
+    --deep: #0D0300;
+    --cream: #FFF0E0;
+    --white: #FFFFFF;
+  }
+
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+    background: var(--orange);
+    font-family: 'Inter', sans-serif;
+    cursor: none;
+  }
+
+  /* ─── CUSTOM CURSOR ─── */
+  #cursor {
+    position: fixed; top: 0; left: 0; z-index: 9999;
+    width: 14px; height: 14px;
+    background: var(--white);
+    border-radius: 50%;
+    pointer-events: none;
+    mix-blend-mode: difference;
+    transform: translate(-50%, -50%);
+    transition: transform 0.1s ease;
+  }
+  #cursor-ring {
+    position: fixed; top: 0; left: 0; z-index: 9998;
+    width: 40px; height: 40px;
+    border: 1.5px solid rgba(255,255,255,0.6);
+    border-radius: 50%;
+    pointer-events: none;
+    transform: translate(-50%, -50%);
+    transition: transform 0.22s ease, width 0.3s ease, height 0.3s ease;
+  }
+
+  /* ─── STAGE ─── */
+  #stage {
+    position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+
+  /* ─── GRAIN OVERLAY ─── */
+  #grain {
+    position: fixed; inset: -50%;
+    width: 200%; height: 200%;
+    opacity: 0.045;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 1000;
+    animation: grainShift 0.08s steps(1) infinite;
+  }
+  @keyframes grainShift {
+    0%   { transform: translate(0,0); }
+    25%  { transform: translate(-2%,-1%); }
+    50%  { transform: translate(1%,2%); }
+    75%  { transform: translate(-1%,1%); }
+    100% { transform: translate(2%,-2%); }
+  }
+
+  /* ─── SCANLINES ─── */
+  #scanlines {
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.04) 2px,
+      rgba(0,0,0,0.04) 4px
+    );
+    pointer-events: none; z-index: 999;
+  }
+
+  /* ─── BG GRADIENT PULSE ─── */
+  #bg-pulse {
+    position: fixed; inset: 0;
+    background: radial-gradient(ellipse 80% 60% at 50% 50%, var(--amber), var(--orange) 55%, #CC3300 100%);
+    animation: bgBreath 4s ease-in-out infinite;
+    z-index: 0;
+  }
+  @keyframes bgBreath {
+    0%,100% { opacity: 1; }
+    50% { opacity: 0.75; }
+  }
+
+  /* ─── PARTICLE CANVAS ─── */
+  #particles { position: fixed; inset: 0; z-index: 1; pointer-events: none; }
+
+  /* ─── HORIZONTAL WIPE BARS ─── */
+  .wipe-bar {
+    position: fixed; left: 0; right: 0;
+    height: 50%;
+    background: var(--deep);
+    z-index: 500;
+    transform-origin: top;
+  }
+  #bar-top { top: 0; transform-origin: top; }
+  #bar-bottom { bottom: 0; transform-origin: bottom; }
+
+  /* ─── SCENES ─── */
+  .scene {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; pointer-events: none;
+    z-index: 10;
+  }
+  .scene.active { opacity: 1; pointer-events: auto; }
+
+  /* ─── SCENE 1: TITLE SLAM ─── */
+  #s1 { flex-direction: column; gap: 0; }
+  #s1 .eyebrow {
+    font-family: 'Inter', sans-serif;
+    font-size: clamp(10px, 1.2vw, 14px);
+    font-weight: 700;
+    letter-spacing: 0.5em;
+    color: var(--cream);
+    opacity: 0;
+    transform: translateY(20px);
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  #s1 .main-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(100px, 18vw, 260px);
+    line-height: 0.85;
+    color: var(--cream);
+    display: flex; flex-direction: column;
+    align-items: center;
+    overflow: hidden;
+  }
+  .title-word {
+    display: block;
+    clip-path: inset(0 0 100% 0);
+    transform: translateY(30px) skewX(-4deg);
+  }
+  #s1 .sub-line {
+    font-family: 'Inter', sans-serif;
+    font-size: clamp(11px, 1.3vw, 15px);
+    font-weight: 100;
+    letter-spacing: 0.3em;
+    color: rgba(255,240,224,0.6);
+    text-transform: uppercase;
+    margin-top: 18px;
+    opacity: 0;
+  }
+
+  /* ─── SCENE 2: KINETIC TEXT ─── */
+  #s2 { flex-direction: column; gap: 0; }
+  .kinetic-line {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(60px, 11vw, 160px);
+    line-height: 0.88;
+    color: var(--deep);
+    display: flex; overflow: hidden;
+    mix-blend-mode: multiply;
+  }
+  .kinetic-line.alt { color: var(--cream); mix-blend-mode: normal; }
+  .kinetic-char {
+    display: inline-block;
+    transform: translateY(110%) rotate(8deg);
+  }
+  .kinetic-stripe {
+    position: absolute; left: 0; right: 0;
+    height: 6px; background: var(--deep);
+    transform: scaleX(0); transform-origin: left;
+  }
+  #stripe-top { top: 38%; }
+  #stripe-mid { top: 50%; background: var(--cream); }
+  #stripe-bot { top: 62%; }
+
+  /* ─── SCENE 3: MORPH SHAPES ─── */
+  #s3 { flex-direction: column; align-items: center; justify-content: center; }
+  #morph-svg {
+    width: min(70vw, 70vh);
+    height: min(70vw, 70vh);
+    overflow: visible;
+  }
+  #morph-text-overlay {
+    position: absolute;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(28px, 5vw, 72px);
+    color: var(--cream);
+    letter-spacing: 0.12em;
+    text-align: center;
+    opacity: 0;
+    text-shadow: 0 0 40px rgba(0,0,0,0.5);
+    top: 50%; left: 50%; transform: translate(-50%,-50%);
+  }
+
+  /* ─── SCENE 4: IMAGE REVEAL ─── */
+  #s4 {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+  }
+  .img-reveal-wrap {
+    position: relative;
+    width: clamp(260px, 38vw, 540px);
+    height: clamp(320px, 46vw, 650px);
+    overflow: hidden;
+  }
+  .img-reveal-cover {
+    position: absolute; inset: 0;
+    background: var(--deep);
+    transform-origin: left;
+    z-index: 2;
+  }
+  .img-canvas {
+    position: absolute; inset: 0;
+    background:
+      linear-gradient(135deg, #FF8C00 0%, #FF5500 40%, #CC2200 70%, #1a0500 100%);
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  /* Geometric portrait stand-in */
+  .img-canvas::before {
+    content: '';
+    position: absolute;
+    width: 55%; height: 65%;
+    border-radius: 50% 50% 42% 42% / 55% 55% 45% 45%;
+    background: linear-gradient(160deg, #FFD0A0 20%, #CC5500 100%);
+    bottom: 0; left: 50%; transform: translateX(-50%);
+  }
+  .img-canvas::after {
+    content: '';
+    position: absolute;
+    width: 32%; height: 32%;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #FFE0C0, #FF8844);
+    top: 16%; left: 50%; transform: translateX(-50%);
+    box-shadow: 0 0 60px rgba(255,100,0,0.6);
+  }
+  .caption-reveal {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(48px, 8vw, 110px);
+    color: var(--cream);
+    line-height: 0.85;
+    position: absolute;
+    left: -10px;
+    bottom: -70px;
+    clip-path: inset(0 100% 0 0);
+    white-space: nowrap;
+  }
+
+  /* ─── SCENE 5: OUTRO ─── */
+  #s5 { flex-direction: column; align-items: center; gap: 20px; }
+  #outro-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(80px, 14vw, 200px);
+    color: var(--cream);
+    letter-spacing: -0.02em;
+    line-height: 1;
+    text-align: center;
+    opacity: 0;
+    transform: scale(1.4);
+    text-shadow:
+      0 0 80px rgba(255,200,100,0.6),
+      0 0 160px rgba(255,100,0,0.3);
+  }
+  #outro-tagline {
+    font-family: 'Inter', sans-serif;
+    font-weight: 100;
+    font-size: clamp(10px, 1.2vw, 14px);
+    letter-spacing: 0.6em;
+    color: rgba(255,240,224,0.5);
+    text-transform: uppercase;
+    opacity: 0;
+  }
+  .dot-ring {
+    position: absolute;
+    border: 1px solid rgba(255,240,224,0.2);
+    border-radius: 50%;
+    animation: ringPulse 2s ease-out infinite;
+  }
+  @keyframes ringPulse {
+    0% { transform: scale(0.5); opacity: 0.8; }
+    100% { transform: scale(2.5); opacity: 0; }
+  }
+
+  /* ─── GLITCH FLASHES ─── */
+  #glitch-layer {
+    position: fixed; inset: 0; z-index: 800;
+    background: var(--cream);
+    opacity: 0; pointer-events: none;
+    mix-blend-mode: overlay;
+  }
+
+  /* ─── TICKER ─── */
+  #ticker-wrap {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    height: 38px; background: var(--deep);
+    overflow: hidden; z-index: 200;
+    display: flex; align-items: center;
+    opacity: 0;
+  }
+  #ticker-inner {
+    display: flex; white-space: nowrap;
+    animation: tickerScroll 18s linear infinite;
+    font-family: 'Inter', sans-serif;
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 0.25em;
+    color: var(--orange);
+    text-transform: uppercase;
+  }
+  .tick-sep { color: rgba(255,85,0,0.4); margin: 0 24px; }
+  @keyframes tickerScroll {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  /* ─── CORNER UI ─── */
+  #corner-tl, #corner-br {
+    position: fixed; z-index: 200;
+    font-family: 'Inter', sans-serif;
+    font-size: 9px; font-weight: 700;
+    letter-spacing: 0.2em;
+    color: rgba(255,240,224,0.35);
+    text-transform: uppercase;
+    opacity: 0;
+  }
+  #corner-tl { top: 28px; left: 32px; }
+  #corner-br { bottom: 52px; right: 32px; text-align: right; }
+  #timecode {
+    position: fixed; top: 28px; right: 32px;
+    font-family: 'Inter', sans-serif;
+    font-size: 9px; font-weight: 700;
+    letter-spacing: 0.15em;
+    color: rgba(255,240,224,0.35);
+    z-index: 200; opacity: 0;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ─── PROGRESS BAR ─── */
+  #progress-bar {
+    position: fixed; bottom: 38px; left: 0;
+    height: 2px;
+    background: rgba(255,240,224,0.5);
+    z-index: 300;
+    transform: scaleX(0); transform-origin: left;
+    transition: transform 0.05s linear;
+    opacity: 0;
+  }
+
+  /* ─── RESTART BTN ─── */
+  #restart {
+    position: fixed; bottom: 52px; left: 50%;
+    transform: translateX(-50%);
+    z-index: 400;
+    font-family: 'Inter', sans-serif;
+    font-size: 10px; font-weight: 700;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: var(--deep);
+    background: var(--cream);
+    border: none;
+    padding: 10px 28px;
+    cursor: none;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+  }
+  #restart:hover { background: var(--orange); color: var(--cream); }
+</style>
+</head>
+<body>
+
+<div id="cursor"></div>
+<div id="cursor-ring"></div>
+
+<div id="bg-pulse"></div>
+<div id="grain"></div>
+<div id="scanlines"></div>
+<canvas id="particles"></canvas>
+<div id="glitch-layer"></div>
+
+<!-- WIPE BARS -->
+<div class="wipe-bar" id="bar-top"></div>
+<div class="wipe-bar" id="bar-bottom"></div>
+
+<!-- SCENE 1: TITLE SLAM -->
+<div class="scene" id="s1">
+  <div class="eyebrow">Est. 2024 — Motion Works</div>
+  <div class="main-title">
+    <span class="title-word" id="tw1">UN</span>
+    <span class="title-word" id="tw2">FILTERED</span>
+  </div>
+  <div class="sub-line">A new kind of energy</div>
+</div>
+
+<!-- SCENE 2: KINETIC TEXT -->
+<div class="scene" id="s2">
+  <div style="position:relative; padding: 0 40px;">
+    <div class="kinetic-line" id="kl1">
+      <span class="kinetic-char">B</span><span class="kinetic-char">O</span><span class="kinetic-char">L</span><span class="kinetic-char">D</span><span class="kinetic-char" style="margin-left:0.18em">.</span>
+    </div>
+    <div class="kinetic-line alt" id="kl2">
+      <span class="kinetic-char">R</span><span class="kinetic-char">A</span><span class="kinetic-char">W</span><span class="kinetic-char" style="margin-left:0.18em">.</span>
+    </div>
+    <div class="kinetic-line" id="kl3">
+      <span class="kinetic-char">R</span><span class="kinetic-char">E</span><span class="kinetic-char">A</span><span class="kinetic-char">L</span><span class="kinetic-char" style="margin-left:0.18em">.</span>
+    </div>
+    <div class="kinetic-stripe" id="stripe-top"></div>
+    <div class="kinetic-stripe" id="stripe-mid"></div>
+    <div class="kinetic-stripe" id="stripe-bot"></div>
+  </div>
+</div>
+
+<!-- SCENE 3: MORPH SHAPES -->
+<div class="scene" id="s3">
+  <svg id="morph-svg" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <filter id="blur-goo">
+        <feGaussianBlur stdDeviation="12" result="blur"/>
+        <feColorMatrix in="blur" mode="matrix"
+          values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 26 -8" result="goo"/>
+      </filter>
+      <radialGradient id="mg1" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#FFF0E0"/>
+        <stop offset="100%" stop-color="#FF8C00"/>
+      </radialGradient>
+      <radialGradient id="mg2" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#FF5500"/>
+        <stop offset="100%" stop-color="#0D0300"/>
+      </radialGradient>
+    </defs>
+    <g filter="url(#blur-goo)">
+      <circle id="mc1" cx="200" cy="200" r="120" fill="url(#mg1)" opacity="0.95"/>
+      <circle id="mc2" cx="200" cy="200" r="80"  fill="url(#mg2)" opacity="0.9"/>
+      <circle id="mc3" cx="200" cy="200" r="40"  fill="#FFF0E0" opacity="0.85"/>
+    </g>
+    <!-- Ring lines -->
+    <circle id="ring1" cx="200" cy="200" r="155" fill="none" stroke="rgba(255,240,224,0.15)" stroke-width="1" stroke-dasharray="6 10"/>
+    <circle id="ring2" cx="200" cy="200" r="175" fill="none" stroke="rgba(255,240,224,0.08)" stroke-width="1"/>
+  </svg>
+  <div id="morph-text-overlay">PURE ENERGY</div>
+</div>
+
+<!-- SCENE 4: IMAGE REVEAL -->
+<div class="scene" id="s4">
+  <div class="img-reveal-wrap" id="irw">
+    <div class="img-reveal-cover" id="irc"></div>
+    <iframe class="img-canvas" src="https://www.youtube.com/embed/Q2tlRsdDdwo?autoplay=1&mute=1&loop=1&playlist=Q2tlRsdDdwo&controls=0" style="border:none; width:100%; height:100%; object-fit:cover;" allow="autoplay; encrypted-media"></iframe>
+    <div class="caption-reveal" id="cap-rev">ICONIC</div>
+  </div>
+</div>
+
+<!-- SCENE 5: OUTRO -->
+<div class="scene" id="s5">
+  <div class="dot-ring" style="width:200px;height:200px;animation-delay:0s;"></div>
+  <div class="dot-ring" style="width:200px;height:200px;animation-delay:0.6s;"></div>
+  <div class="dot-ring" style="width:200px;height:200px;animation-delay:1.2s;"></div>
+  <div id="outro-logo">UNFILTERED</div>
+  <div id="outro-tagline">Bold · Raw · Real · Unfiltered</div>
+</div>
+
+<!-- UI CHROME -->
+<div id="ticker-wrap">
+  <div id="ticker-inner">
+    UNFILTERED MOTION WORKS&nbsp;<span class="tick-sep">✦</span>&nbsp;BOLD · RAW · REAL&nbsp;<span class="tick-sep">✦</span>&nbsp;EST. 2024&nbsp;<span class="tick-sep">✦</span>&nbsp;PURE CREATIVE ENERGY&nbsp;<span class="tick-sep">✦</span>&nbsp;NO FILTER, NO LIMITS&nbsp;<span class="tick-sep">✦</span>&nbsp;UNFILTERED MOTION WORKS&nbsp;<span class="tick-sep">✦</span>&nbsp;BOLD · RAW · REAL&nbsp;<span class="tick-sep">✦</span>&nbsp;EST. 2024&nbsp;<span class="tick-sep">✦</span>&nbsp;PURE CREATIVE ENERGY&nbsp;<span class="tick-sep">✦</span>&nbsp;NO FILTER, NO LIMITS&nbsp;<span class="tick-sep">✦</span>&nbsp;
+  </div>
+</div>
+<div id="corner-tl">Unfiltered / FX-01</div>
+<div id="corner-br">Motion Reel 2024</div>
+<div id="timecode">00:00:00:00</div>
+<div id="progress-bar"></div>
+<button id="restart">↻ Replay</button>
+
+<script>
+// ─── CURSOR ───
+const cursor = document.getElementById('cursor');
+const cursorRing = document.getElementById('cursor-ring');
+let mx = window.innerWidth/2, my = window.innerHeight/2;
+let rx = mx, ry = my;
+
+document.addEventListener('mousemove', e => {
+  mx = e.clientX; my = e.clientY;
+  cursor.style.transform = `translate(${mx - 7}px, ${my - 7}px)`;
+});
+
+(function animateCursorRing() {
+  rx += (mx - rx) * 0.12;
+  ry += (my - ry) * 0.12;
+  cursorRing.style.transform = `translate(${rx - 20}px, ${ry - 20}px)`;
+  requestAnimationFrame(animateCursorRing);
+})();
+
+// ─── PARTICLES ───
+const canvas = document.getElementById('particles');
+const ctx = canvas.getContext('2d');
+let particles = [];
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+class Particle {
+  constructor() { this.reset(true); }
+  reset(init = false) {
+    this.x = Math.random() * canvas.width;
+    this.y = init ? Math.random() * canvas.height : canvas.height + 10;
+    this.size = Math.random() * 2.5 + 0.5;
+    this.speed = Math.random() * 0.6 + 0.2;
+    this.opacity = Math.random() * 0.5 + 0.1;
+    this.drift = (Math.random() - 0.5) * 0.3;
+    this.life = 1;
+  }
+  update() {
+    this.y -= this.speed;
+    this.x += this.drift;
+    if (this.y < -10) this.reset();
+  }
+  draw() {
+    ctx.save();
+    ctx.globalAlpha = this.opacity;
+    ctx.fillStyle = '#FFF0E0';
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+}
+
+for (let i = 0; i < 80; i++) particles.push(new Particle());
+
+function animateParticles() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  particles.forEach(p => { p.update(); p.draw(); });
+  requestAnimationFrame(animateParticles);
+}
+animateParticles();
+
+// ─── TIMECODE ───
+let tcStart = null;
+const tcEl = document.getElementById('timecode');
+function updateTimecode(ts) {
+  if (!tcStart) tcStart = ts;
+  const elapsed = (ts - tcStart) / 1000;
+  const h = 0, m = 0;
+  const s = Math.floor(elapsed) % 60;
+  const f = Math.floor((elapsed % 1) * 24);
+  tcEl.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}:${String(f).padStart(2,'0')}`;
+  requestAnimationFrame(updateTimecode);
+}
+requestAnimationFrame(updateTimecode);
+
+// ─── GLITCH FLASH ───
+const glitchEl = document.getElementById('glitch-layer');
+function glitchFlash(duration = 60) {
+  glitchEl.style.opacity = '0.7';
+  setTimeout(() => { glitchEl.style.opacity = '0.3'; }, duration * 0.3);
+  setTimeout(() => { glitchEl.style.opacity = '0.8'; }, duration * 0.5);
+  setTimeout(() => { glitchEl.style.opacity = '0'; }, duration);
+}
+
+// ─── EASING ───
+function easeOutExpo(t) { return t === 1 ? 1 : 1 - Math.pow(2, -10 * t); }
+function easeOutBack(t) { const c1=1.70158, c3=c1+1; return 1+c3*Math.pow(t-1,3)+c1*Math.pow(t-1,2); }
+function easeInOutQuart(t) { return t < 0.5 ? 8*t*t*t*t : 1-Math.pow(-2*t+2,4)/2; }
+function easeOutQuint(t) { return 1 - Math.pow(1 - t, 5); }
+
+function animate(duration, onUpdate, onComplete) {
+  const start = performance.now();
+  function frame(now) {
+    const p = Math.min((now - start) / duration, 1);
+    onUpdate(p);
+    if (p < 1) requestAnimationFrame(frame);
+    else if (onComplete) onComplete();
+  }
+  requestAnimationFrame(frame);
+}
+
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ─── SCENE MANAGER ───
+const scenes = ['s1','s2','s3','s4','s5'];
+let currentScene = -1;
+
+function showScene(id) {
+  scenes.forEach(s => {
+    const el = document.getElementById(s);
+    el.classList.remove('active');
+    el.style.opacity = '0';
+  });
+  const el = document.getElementById(id);
+  el.classList.add('active');
+  el.style.opacity = '1';
+}
+function hideScene(id) {
+  const el = document.getElementById(id);
+  el.classList.remove('active');
+  el.style.opacity = '0';
+}
+
+// ─── PROGRESS ───
+const progressBar = document.getElementById('progress-bar');
+const TOTAL_DUR = 18000; // ms
+let seqStart = null;
+
+function updateProgress(ts) {
+  if (!seqStart) return;
+  const p = Math.min((ts - seqStart) / TOTAL_DUR, 1);
+  progressBar.style.transform = `scaleX(${p})`;
+  if (p < 1) requestAnimationFrame(updateProgress);
+}
+
+// ─── UI ELEMENTS ───
+function showUI() {
+  const els = ['corner-tl','corner-br','timecode','ticker-wrap','progress-bar'];
+  els.forEach(id => {
+    const el = document.getElementById(id);
+    el.style.transition = 'opacity 1s ease';
+    el.style.opacity = id === 'ticker-wrap' ? '1' : (id === 'progress-bar' ? '1' : '1');
+  });
+}
+
+// ─── WIPE IN/OUT ───
+const barTop = document.getElementById('bar-top');
+const barBot = document.getElementById('bar-bottom');
+
+function wipeOpen(cb) {
+  // bars start covering screen, animate out
+  barTop.style.transition = 'none';
+  barBot.style.transition = 'none';
+  barTop.style.transform = 'scaleY(1)';
+  barBot.style.transform = 'scaleY(1)';
+  setTimeout(() => {
+    barTop.style.transition = 'transform 0.7s cubic-bezier(0.77,0,0.18,1)';
+    barBot.style.transition = 'transform 0.7s cubic-bezier(0.77,0,0.18,1)';
+    barTop.style.transform = 'scaleY(0)';
+    barBot.style.transform = 'scaleY(0)';
+    setTimeout(cb, 700);
+  }, 50);
+}
+function wipeClose(cb) {
+  barTop.style.transition = 'transform 0.5s cubic-bezier(0.77,0,0.18,1)';
+  barBot.style.transition = 'transform 0.5s cubic-bezier(0.77,0,0.18,1)';
+  barTop.style.transform = 'scaleY(1)';
+  barBot.style.transform = 'scaleY(1)';
+  setTimeout(cb, 500);
+}
+
+// ─── MORPH ANIMATION ───
+function startMorphAnim() {
+  const c1 = document.getElementById('mc1');
+  const c2 = document.getElementById('mc2');
+  const c3 = document.getElementById('mc3');
+  const r1 = document.getElementById('ring1');
+  const r2 = document.getElementById('ring2');
+  const mt = document.getElementById('morph-text-overlay');
+
+  let morphT = 0;
+  let morphDir = 1;
+  let morphActive = true;
+
+  function morphFrame() {
+    if (!morphActive) return;
+    morphT += 0.008 * morphDir;
+    if (morphT >= 1) { morphT = 1; morphDir = -1; }
+    if (morphT <= 0) { morphT = 0; morphDir = 1; }
+
+    const e = Math.sin(morphT * Math.PI);
+    c1.setAttribute('r', 120 + e * 30);
+    c2.setAttribute('r', 80 - e * 25);
+    c3.setAttribute('r', 40 + e * 20);
+    c2.setAttribute('cx', 200 + e * 40);
+    c3.setAttribute('cy', 200 - e * 30);
+    r1.setAttribute('r', 155 + e * 20);
+    r1.setAttribute('stroke-dashoffset', morphT * 30);
+
+    requestAnimationFrame(morphFrame);
+  }
+  requestAnimationFrame(morphFrame);
+
+  // Show text after 1s
+  setTimeout(() => {
+    animate(600, p => {
+      const ep = easeOutBack(p);
+      mt.style.opacity = p;
+      mt.style.transform = `translate(-50%,-50%) scale(${0.8 + ep*0.2})`;
+    });
+  }, 900);
+
+  // Slow ring rotation
+  let angle = 0;
+  function rotateRings() {
+    angle += 0.15;
+    r1.style.transform = `rotate(${angle}deg)`;
+    r1.style.transformOrigin = '200px 200px';
+    r2.setAttribute('stroke-dasharray', `${4 + Math.sin(angle*0.02)*3} 15`);
+    if (morphActive) requestAnimationFrame(rotateRings);
+  }
+  rotateRings();
+
+  return () => { morphActive = false; };
+}
+
+// ─── MAIN SEQUENCE ───
+async function runSequence() {
+  seqStart = performance.now();
+  requestAnimationFrame(updateProgress);
+  showUI();
+
+  // ── SCENE 1: TITLE SLAM ──
+  showScene('s1');
+  glitchFlash(80);
+  wipeOpen(async () => {});
+
+  await delay(300);
+
+  const eyebrow = document.querySelector('#s1 .eyebrow');
+  animate(500, p => {
+    const ep = easeOutExpo(p);
+    eyebrow.style.opacity = ep * 0.7;
+    eyebrow.style.transform = `translateY(${(1-ep)*16}px)`;
+  });
+
+  await delay(200);
+
+  // Slam title words in
+  const words = ['tw1','tw2'];
+  for (let i = 0; i < words.length; i++) {
+    await delay(i === 0 ? 0 : 60);
+    const w = document.getElementById(words[i]);
+    glitchFlash(40);
+    animate(500, p => {
+      const ep = easeOutBack(p);
+      w.style.clipPath = `inset(0 0 ${(1-ep)*100}% 0)`;
+      w.style.transform = `translateY(${(1-ep)*20}px) skewX(${(1-p)*-4}deg)`;
+    });
+  }
+
+  await delay(500);
+  const sub = document.querySelector('#s1 .sub-line');
+  animate(600, p => {
+    sub.style.opacity = easeOutExpo(p) * 0.6;
+    sub.style.transform = `translateX(${(1-easeOutExpo(p))*20}px)`;
+  });
+
+  await delay(2200);
+
+  // Transition out: horizontal glitch wipe
+  glitchFlash(120);
+  await delay(80);
+
+  animate(400, p => {
+    const ep = easeInOutQuart(p);
+    document.getElementById('s1').style.transform = `translateX(${ep * -8}%) skewX(${ep*3}deg)`;
+    document.getElementById('s1').style.opacity = 1 - ep;
+  }, async () => {
+    hideScene('s1');
+    document.getElementById('s1').style.transform = '';
+
+    // ── SCENE 2: KINETIC TEXT ──
+    showScene('s2');
+
+    const chars = document.querySelectorAll('.kinetic-char');
+    chars.forEach((c, i) => {
+      setTimeout(() => {
+        animate(420, p => {
+          const ep = easeOutBack(p);
+          c.style.transform = `translateY(${(1-ep)*110}%) rotate(${(1-ep)*8}deg)`;
+        });
+      }, i * 45);
+    });
+
+    await delay(300);
+    ['stripe-top','stripe-mid','stripe-bot'].forEach((id, i) => {
+      setTimeout(() => {
+        const s = document.getElementById(id);
+        animate(300, p => {
+          s.style.transform = `scaleX(${easeOutExpo(p)})`;
+        }, () => {
+          setTimeout(() => {
+            animate(300, p => {
+              s.style.transform = `scaleX(${1 - easeInOutQuart(p)})`;
+              s.style.transformOrigin = 'right';
+            });
+          }, 180);
+        });
+      }, i * 80);
+    });
+
+    await delay(2400);
+    glitchFlash(100);
+    await delay(60);
+
+    animate(350, p => {
+      const ep = easeInOutQuart(p);
+      document.getElementById('s2').style.transform = `translateY(${ep * 6}%) scale(${1 - ep*0.04})`;
+      document.getElementById('s2').style.opacity = 1 - ep;
+    }, async () => {
+      hideScene('s2');
+      document.getElementById('s2').style.transform = '';
+
+      // ── SCENE 3: MORPH SHAPES ──
+      showScene('s3');
+      const stopMorph = startMorphAnim();
+      const morphSvg = document.getElementById('morph-svg');
+      morphSvg.style.transform = 'scale(0.7)';
+      morphSvg.style.opacity = '0';
+      animate(800, p => {
+        const ep = easeOutBack(p);
+        morphSvg.style.transform = `scale(${0.7 + ep*0.3})`;
+        morphSvg.style.opacity = easeOutExpo(p);
+      });
+
+      await delay(2800);
+      stopMorph();
+      glitchFlash(150);
+      await delay(80);
+
+      animate(400, p => {
+        const ep = easeInOutQuart(p);
+        document.getElementById('s3').style.transform = `scale(${1 + ep*0.08})`;
+        document.getElementById('s3').style.opacity = 1 - ep;
+      }, async () => {
+        hideScene('s3');
+        document.getElementById('s3').style.transform = '';
+
+        // ── SCENE 4: IMAGE REVEAL ──
+        showScene('s4');
+        const cover = document.getElementById('irc');
+        const cap = document.getElementById('cap-rev');
+
+        cover.style.transform = 'scaleX(1)';
+        cover.style.transition = 'none';
+
+        await delay(100);
+        glitchFlash(60);
+        animate(700, p => {
+          const ep = easeInOutQuart(p);
+          cover.style.transform = `scaleX(${1 - ep})`;
+          cover.style.transformOrigin = 'left';
+        }, async () => {
+          // Caption reveal
+          await delay(300);
+          animate(500, p => {
+            const ep = easeOutExpo(p);
+            cap.style.clipPath = `inset(0 ${(1-ep)*100}% 0 0)`;
+          });
+        });
+
+        // Image frame wobble
+        const irw = document.getElementById('irw');
+        animate(600, p => {
+          const ep = easeOutBack(p);
+          irw.style.transform = `scale(${0.88 + ep*0.12}) translateY(${(1-easeOutExpo(p))*30}px)`;
+          irw.style.opacity = easeOutExpo(p);
+        });
+
+        await delay(3000);
+        glitchFlash(120);
+        await delay(70);
+
+        animate(450, p => {
+          const ep = easeInOutQuart(p);
+          document.getElementById('s4').style.transform = `translateX(${ep*6}%) skewX(${-ep*2}deg)`;
+          document.getElementById('s4').style.opacity = 1 - ep;
+        }, async () => {
+          hideScene('s4');
+          document.getElementById('s4').style.transform = '';
+
+          // ── SCENE 5: OUTRO ──
+          showScene('s5');
+
+          const logo = document.getElementById('outro-logo');
+          const tag = document.getElementById('outro-tagline');
+
+          glitchFlash(80);
+          await delay(100);
+
+          animate(900, p => {
+            const ep = easeOutExpo(p);
+            logo.style.opacity = ep;
+            logo.style.transform = `scale(${1.4 - ep*0.4})`;
+            logo.style.textShadow = `0 0 ${(1-p)*120+80}px rgba(255,200,100,0.6), 0 0 ${(1-p)*200+160}px rgba(255,100,0,0.3)`;
+          });
+
+          await delay(600);
+          animate(600, p => {
+            tag.style.opacity = easeOutExpo(p) * 0.5;
+            tag.style.transform = `translateY(${(1-easeOutExpo(p))*12}px)`;
+          });
+
+          // Show restart
+          await delay(2000);
+          const restartBtn = document.getElementById('restart');
+          restartBtn.style.opacity = '1';
+        });
+      });
+    });
+  });
+}
+
+// ─── RESTART ───
+document.getElementById('restart').addEventListener('click', () => {
+  location.reload();
+});
+
+// ─── START ───
+// Brief flash-in from black
+barTop.style.transform = 'scaleY(1)';
+barBot.style.transform = 'scaleY(1)';
+barTop.style.transition = 'none';
+barBot.style.transition = 'none';
+
+setTimeout(() => {
+  runSequence();
+}, 400);
+</script>
+</body>
+</html>

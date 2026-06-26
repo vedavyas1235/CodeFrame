@@ -1,0 +1,1281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Engineer Roadmap</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ── RESET ── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+
+/* ── TOKENS ── */
+:root{
+  --bg:     #06080F;
+  --s0:     #0B0E1A;
+  --s1:     #111628;
+  --border: rgba(255,255,255,0.07);
+  --bmd:    rgba(255,255,255,0.13);
+  --text:   #E8E6F0;
+  --muted:  rgba(232,230,240,0.42);
+  --dim:    rgba(232,230,240,0.16);
+
+  --teal:   #0FF4C6;
+  --violet: #8B7FFF;
+  --amber:  #FFB547;
+  --coral:  #FF6584;
+  --sky:    #5BC8FF;
+  --lime:   #AAFF47;
+  --pink:   #F472B6;
+  --white:  #FFFFFF;
+}
+
+html,body{
+  width:100%;height:100%;
+  background:var(--bg);
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
+  font-family:'Space Grotesk',sans-serif;
+}
+
+/* ── STAGE ── */
+#stage{
+  width:720px;height:720px;
+  position:relative;
+  overflow:hidden;
+  background:var(--bg);
+}
+
+/* ── PROGRESS BAR ── */
+#prog{position:absolute;top:0;left:0;right:0;height:2px;z-index:50;background:var(--border);}
+#prog-fill{height:100%;width:0%;transition:background 1.5s ease;}
+
+/* ── HUD ── */
+#hud{
+  position:absolute;top:0;left:0;right:0;
+  height:44px;padding:0 26px;
+  display:flex;align-items:center;justify-content:space-between;
+  z-index:40;opacity:0;transition:opacity .6s ease;
+}
+#hud.in{opacity:1;}
+#hud-left{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.22em;text-transform:uppercase;color:var(--dim);}
+#hud-right{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.16em;color:var(--dim);font-variant-numeric:tabular-nums;}
+
+/* ── SCENES ── */
+.scene{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  opacity:0;transition:opacity .85s ease;
+  pointer-events:none;
+  z-index:10;
+}
+.scene.visible{opacity:1;pointer-events:auto;}
+.scene.exit{opacity:0;}
+
+/* ════════════════════════════════
+   SCENE 0 — INTRO
+════════════════════════════════*/
+#s0-bg-grid{
+  position:absolute;inset:0;
+  background-image:
+    linear-gradient(var(--border) 1px,transparent 1px),
+    linear-gradient(90deg,var(--border) 1px,transparent 1px);
+  background-size:60px 60px;
+  opacity:0;transition:opacity 1.4s ease;
+}
+#s0-bg-grid.in{opacity:1;}
+
+#s0-chip{
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px;letter-spacing:.3em;text-transform:uppercase;
+  color:var(--teal);border:1px solid var(--teal);
+  padding:5px 16px;border-radius:40px;
+  opacity:0;transform:translateY(10px);
+  transition:opacity .6s ease,transform .6s ease;
+  margin-bottom:24px;
+}
+#s0-chip.in{opacity:1;transform:translateY(0);}
+
+#s0-title{
+  font-size:64px;font-weight:700;
+  line-height:.95;letter-spacing:-.035em;
+  color:var(--text);text-align:center;
+  max-width:540px;
+}
+.s0w{
+  display:inline-block;
+  opacity:0;transform:translateY(56px) skewY(3deg);
+  transition:opacity .6s cubic-bezier(.22,1,.36,1),transform .6s cubic-bezier(.22,1,.36,1);
+  transform-origin:bottom;
+}
+.s0w.in{opacity:1;transform:translateY(0) skewY(0);}
+.s0w.c1{color:var(--teal);}
+.s0w.c2{color:var(--violet);}
+
+#s0-rule{
+  width:0;height:1px;background:linear-gradient(90deg,var(--teal),var(--violet));
+  margin:26px auto 0;transition:width 1.3s cubic-bezier(.22,1,.36,1);
+}
+#s0-rule.in{width:180px;}
+
+#s0-sub{
+  margin-top:18px;font-size:13px;line-height:1.7;
+  letter-spacing:.04em;color:var(--muted);text-align:center;max-width:420px;
+  opacity:0;transform:translateY(8px);
+  transition:opacity .8s ease,transform .8s ease;
+}
+#s0-sub.in{opacity:1;transform:translateY(0);}
+
+#s0-count{
+  margin-top:28px;
+  display:flex;gap:28px;
+}
+.s0-badge{
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  opacity:0;transform:scale(.88);
+  transition:opacity .55s cubic-bezier(.22,1,.36,1),transform .55s cubic-bezier(.22,1,.36,1);
+}
+.s0-badge.in{opacity:1;transform:scale(1);}
+.s0-badge-num{
+  font-family:'JetBrains Mono',monospace;
+  font-size:26px;font-weight:700;color:var(--teal);
+  line-height:1;
+}
+.s0-badge-label{
+  font-size:9px;letter-spacing:.2em;text-transform:uppercase;color:var(--dim);
+}
+
+/* ════════════════════════════════
+   SCENE 1 — FOUNDATIONS
+   Left-side icon column + right reveal lines
+════════════════════════════════*/
+.scene-eyebrow{
+  font-family:'JetBrains Mono',monospace;
+  font-size:9px;letter-spacing:.3em;text-transform:uppercase;
+  margin-bottom:30px;
+  opacity:0;transition:opacity .7s ease;
+}
+.scene-eyebrow.in{opacity:1;}
+
+/* skill row */
+.skill-row{
+  display:flex;align-items:center;gap:16px;
+  width:580px;padding:14px 0;
+  border-top:1px solid var(--border);
+  opacity:0;transform:translateX(-22px);
+  transition:opacity .55s ease,transform .55s cubic-bezier(.22,1,.36,1);
+}
+.skill-row:last-child{border-bottom:1px solid var(--border);}
+.skill-row.in{opacity:1;transform:translateX(0);}
+
+.skill-icon{
+  width:36px;height:36px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:17px;flex-shrink:0;
+  transition:background .5s ease,transform .4s cubic-bezier(.22,1,.36,1);
+}
+.skill-row.glow .skill-icon{transform:scale(1.15);}
+
+.skill-name{
+  font-size:15px;font-weight:600;color:var(--text);
+  flex:1;
+  transition:color .4s ease;
+}
+.skill-track{flex:2;height:2px;background:var(--border);border-radius:2px;position:relative;overflow:hidden;}
+.skill-fill{
+  position:absolute;inset-block:0;left:0;
+  width:0%;border-radius:2px;
+  transition:width 1.1s cubic-bezier(.22,1,.36,1);
+}
+.skill-tag{
+  font-family:'JetBrains Mono',monospace;
+  font-size:9px;letter-spacing:.12em;
+  color:var(--dim);flex-shrink:0;
+  opacity:0;transition:opacity .5s ease;
+}
+.skill-row.in .skill-tag{opacity:1;}
+
+/* ════════════════════════════════
+   SCENE 2 — MATH & STATS
+   Animated formula cards that flip in
+════════════════════════════════*/
+#s2-grid{
+  display:grid;
+  grid-template-columns:repeat(3,172px);
+  grid-template-rows:repeat(2,128px);
+  gap:12px;
+}
+.math-card{
+  background:var(--s0);border:1px solid var(--border);border-radius:12px;
+  padding:18px 16px;display:flex;flex-direction:column;justify-content:space-between;
+  opacity:0;transform:scale(.86) translateY(12px);
+  transition:
+    opacity .5s cubic-bezier(.22,1,.36,1),
+    transform .5s cubic-bezier(.22,1,.36,1),
+    border-color .45s ease,
+    background .45s ease;
+}
+.math-card.in{opacity:1;transform:scale(1) translateY(0);}
+.math-card.glow{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 8%,var(--s0));}
+
+.mc-formula{
+  font-family:'JetBrains Mono',monospace;
+  font-size:18px;font-weight:700;
+  color:var(--accent);line-height:1;
+  transition:color .4s ease;
+}
+.mc-name{
+  font-size:11px;font-weight:600;color:var(--text);
+  transition:color .4s ease;
+}
+.mc-desc{
+  font-size:9px;line-height:1.55;color:var(--muted);
+  opacity:0;transform:translateY(4px);
+  transition:opacity .5s ease,transform .5s ease;
+}
+.math-card.in .mc-desc{opacity:1;transform:translateY(0);}
+
+/* ════════════════════════════════
+   SCENE 3 — ML CORE
+   Horizontal timeline with connector lines
+════════════════════════════════*/
+#s3-timeline{
+  display:flex;align-items:flex-start;gap:0;
+  width:640px;
+}
+.tl-col{
+  display:flex;flex-direction:column;align-items:center;
+  flex:1;
+  opacity:0;transform:translateY(20px);
+  transition:opacity .6s cubic-bezier(.22,1,.36,1),transform .6s cubic-bezier(.22,1,.36,1);
+}
+.tl-col.in{opacity:1;transform:translateY(0);}
+
+.tl-dot{
+  width:38px;height:38px;border-radius:50%;
+  border:2px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;
+  transition:border-color .5s ease,background .5s ease,transform .4s cubic-bezier(.22,1,.36,1);
+  position:relative;z-index:2;
+}
+.tl-col.lit .tl-dot{
+  border-color:var(--accent);
+  background:color-mix(in srgb,var(--accent) 15%,transparent);
+  transform:scale(1.15);
+}
+
+.tl-connector{
+  position:absolute;top:19px;left:50%;
+  width:100%;height:1px;background:var(--border);
+  transform-origin:left;
+  transition:background .5s ease;
+}
+.tl-col.lit + .tl-col .tl-connector-left{background:var(--accent);}
+
+.tl-label{
+  margin-top:10px;font-size:11px;font-weight:600;
+  color:var(--text);text-align:center;line-height:1.35;
+}
+.tl-sub{
+  margin-top:5px;font-size:9px;letter-spacing:.05em;
+  color:var(--muted);text-align:center;line-height:1.5;
+  opacity:0;transition:opacity .6s ease;
+}
+.tl-col.in .tl-sub{opacity:1;}
+
+.tl-connector-wrap{
+  position:relative;flex:1;height:1px;
+  margin-top:19px;
+  background:var(--border);
+  overflow:hidden;
+}
+.tl-connector-fill{
+  position:absolute;inset-block:0;left:0;
+  width:0%;background:var(--accent);
+  transition:width .9s cubic-bezier(.22,1,.36,1);
+}
+
+/* ════════════════════════════════
+   SCENE 4 — DEEP LEARNING
+   Animated neural network diagram
+════════════════════════════════*/
+#s4-net{
+  position:relative;
+  width:560px;height:280px;
+}
+.net-node{
+  position:absolute;
+  width:28px;height:28px;border-radius:50%;
+  border:1.5px solid var(--border);
+  background:var(--s0);
+  display:flex;align-items:center;justify-content:center;
+  font-size:8px;color:var(--dim);
+  opacity:0;transform:scale(0);
+  transition:
+    opacity .45s ease,
+    transform .45s cubic-bezier(.22,1,.36,1),
+    border-color .5s ease,
+    background .5s ease,
+    box-shadow .5s ease;
+}
+.net-node.in{opacity:1;transform:scale(1);}
+.net-node.lit{
+  border-color:var(--accent);
+  background:color-mix(in srgb,var(--accent) 20%,var(--s0));
+  box-shadow:0 0 12px color-mix(in srgb,var(--accent) 40%,transparent);
+}
+.net-layer-label{
+  position:absolute;bottom:-28px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:8px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--dim);white-space:nowrap;
+  transform:translateX(-50%);
+}
+#s4-svg{
+  position:absolute;inset:0;
+  pointer-events:none;overflow:visible;
+}
+#s4-svg line{
+  stroke:var(--border);stroke-width:.8;
+  transition:stroke .5s ease,stroke-width .5s ease,opacity .5s ease;
+}
+#s4-svg line.lit{
+  stroke:color-mix(in srgb,var(--accent) 50%,transparent);
+  stroke-width:1.2;
+}
+
+#s4-pills{
+  display:flex;gap:10px;margin-top:32px;flex-wrap:wrap;justify-content:center;
+}
+.dl-pill{
+  font-size:10px;letter-spacing:.1em;
+  border:1px solid var(--bmd);border-radius:40px;
+  padding:5px 14px;color:var(--muted);
+  opacity:0;transform:translateY(8px) scale(.94);
+  transition:opacity .5s ease,transform .5s cubic-bezier(.22,1,.36,1),border-color .4s,color .4s;
+}
+.dl-pill.in{opacity:1;transform:translateY(0) scale(1);}
+.dl-pill.lit{border-color:var(--accent);color:var(--accent);}
+
+/* ════════════════════════════════
+   SCENE 5 — MLOPS
+   Circular pipeline diagram
+════════════════════════════════*/
+#s5-ring-wrap{
+  position:relative;width:320px;height:320px;
+}
+#s5-svg{width:100%;height:100%;overflow:visible;}
+
+.pipe-node-group{opacity:0;transition:opacity .5s ease,transform .5s cubic-bezier(.22,1,.36,1);}
+.pipe-node-group.in{opacity:1;transform:scale(1)!important;}
+
+#s5-center{
+  position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  text-align:center;
+}
+#s5-center-title{
+  font-size:13px;font-weight:700;color:var(--text);
+}
+#s5-center-sub{
+  font-size:9px;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--dim);margin-top:4px;
+}
+
+#s5-list{
+  margin-left:32px;
+  display:flex;flex-direction:column;gap:10px;
+}
+.ops-item{
+  display:flex;align-items:center;gap:12px;
+  opacity:0;transform:translateX(16px);
+  transition:opacity .5s ease,transform .5s cubic-bezier(.22,1,.36,1);
+}
+.ops-item.in{opacity:1;transform:translateX(0);}
+.ops-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--accent);flex-shrink:0;
+  transition:transform .4s cubic-bezier(.22,1,.36,1);
+}
+.ops-item.in .ops-dot{transform:scale(1.4);}
+.ops-text{font-size:12px;font-weight:500;color:var(--text);}
+.ops-tag{
+  font-family:'JetBrains Mono',monospace;
+  font-size:9px;color:var(--dim);margin-left:auto;
+}
+
+/* ════════════════════════════════
+   SCENE 6 — LLM SPECIFIC
+   Two column feature grid
+════════════════════════════════*/
+#s6-cols{
+  display:flex;gap:0;width:600px;
+}
+.llm-col{
+  flex:1;padding:0 28px;
+}
+.llm-col + .llm-col{border-left:1px solid var(--border);}
+
+.llm-col-title{
+  font-family:'JetBrains Mono',monospace;
+  font-size:9px;letter-spacing:.25em;text-transform:uppercase;
+  margin-bottom:20px;
+  opacity:0;transition:opacity .7s ease;
+}
+.llm-col-title.in{opacity:1;}
+
+.llm-item{
+  display:flex;align-items:flex-start;gap:10px;
+  margin-bottom:16px;
+  opacity:0;transform:translateY(10px);
+  transition:opacity .5s ease,transform .5s cubic-bezier(.22,1,.36,1);
+}
+.llm-item.in{opacity:1;transform:translateY(0);}
+.llm-item-icon{
+  font-size:14px;line-height:1;flex-shrink:0;
+  margin-top:1px;
+}
+.llm-item-body{}
+.llm-item-title{
+  font-size:12px;font-weight:600;color:var(--text);
+  line-height:1.3;
+}
+.llm-item-desc{
+  font-size:10px;color:var(--muted);line-height:1.5;
+  margin-top:2px;
+}
+
+/* ════════════════════════════════
+   SCENE 7 — CLOSING
+════════════════════════════════*/
+#s7-glow{
+  position:absolute;inset:0;
+  background:radial-gradient(ellipse 55% 45% at 50% 50%,
+    color-mix(in srgb,var(--teal) 10%,transparent),transparent);
+  opacity:0;transition:opacity 2s ease;pointer-events:none;
+}
+#s7-glow.in{opacity:1;}
+
+#s7-pre{
+  font-family:'JetBrains Mono',monospace;
+  font-size:9px;letter-spacing:.35em;text-transform:uppercase;
+  color:var(--teal);margin-bottom:20px;
+  opacity:0;transform:translateY(8px);
+  transition:opacity .7s ease,transform .7s ease;
+}
+#s7-pre.in{opacity:1;transform:translateY(0);}
+
+#s7-title{
+  font-size:72px;font-weight:700;
+  letter-spacing:-.04em;line-height:.92;
+  text-align:center;color:var(--text);
+  opacity:0;transform:scale(.9);
+  transition:opacity 1s cubic-bezier(.22,1,.36,1),transform 1s cubic-bezier(.22,1,.36,1);
+}
+#s7-title.in{opacity:1;transform:scale(1);}
+#s7-title span{color:var(--teal);}
+
+#s7-pills{
+  display:flex;gap:8px;margin-top:30px;flex-wrap:wrap;justify-content:center;max-width:500px;
+}
+.s7-pill{
+  font-size:10px;letter-spacing:.1em;
+  border:1px solid var(--bmd);border-radius:40px;
+  padding:5px 16px;color:var(--muted);
+  opacity:0;transform:translateY(8px) scale(.94);
+  transition:opacity .5s ease,transform .5s cubic-bezier(.22,1,.36,1),border-color .4s,color .4s;
+}
+.s7-pill.in{opacity:1;transform:translateY(0) scale(1);}
+.s7-pill.lit{border-color:var(--teal);color:var(--teal);}
+
+#s7-rule{
+  width:0;height:1px;
+  background:linear-gradient(90deg,var(--teal),var(--violet));
+  margin:28px auto 0;
+  transition:width 1.5s cubic-bezier(.22,1,.36,1);
+}
+#s7-rule.in{width:220px;}
+
+#s7-sub{
+  margin-top:18px;font-size:11px;letter-spacing:.08em;
+  color:var(--muted);text-align:center;
+  opacity:0;transform:translateY(6px);
+  transition:opacity .8s ease,transform .8s ease;
+}
+#s7-sub.in{opacity:1;transform:translateY(0);}
+
+/* ── REPLAY ── */
+#replay-btn{
+  position:absolute;bottom:24px;right:26px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:9px;letter-spacing:.2em;text-transform:uppercase;
+  padding:7px 20px;border-radius:40px;
+  border:1px solid var(--bmd);background:transparent;
+  color:var(--muted);cursor:pointer;
+  opacity:0;transition:opacity .5s ease,background .2s,color .2s;
+  z-index:50;pointer-events:none;
+}
+#replay-btn.in{opacity:1;pointer-events:auto;}
+#replay-btn:hover{background:rgba(255,255,255,.05);color:var(--text);}
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <div id="prog"><div id="prog-fill"></div></div>
+
+  <div id="hud">
+    <div id="hud-left">AI Engineer Roadmap</div>
+    <div id="hud-right" id="hud-timer">00:00</div>
+  </div>
+
+  <!-- ── SCENE 0 — INTRO ── -->
+  <div class="scene" id="sc0">
+    <div id="s0-bg-grid"></div>
+    <div id="s0-chip">Career Roadmap · 2025</div>
+    <div id="s0-title">
+      <span class="s0w">Become</span>&nbsp;
+      <span class="s0w">an</span>&nbsp;
+      <span class="s0w c1">AI</span><br>
+      <span class="s0w c2">Engineer</span>
+    </div>
+    <div id="s0-rule"></div>
+    <div id="s0-sub">The complete skill map — from first principles to production-grade LLM systems.</div>
+    <div id="s0-count">
+      <div class="s0-badge" id="b0"><div class="s0-badge-num">7</div><div class="s0-badge-label">Domains</div></div>
+      <div class="s0-badge" id="b1"><div class="s0-badge-num">42</div><div class="s0-badge-label">Core Topics</div></div>
+      <div class="s0-badge" id="b2"><div class="s0-badge-num">∞</div><div class="s0-badge-label">Potential</div></div>
+    </div>
+  </div>
+
+  <!-- ── SCENE 1 — FOUNDATIONS ── -->
+  <div class="scene" id="sc1">
+    <div class="scene-eyebrow" id="s1-ey" style="color:var(--sky)">01 — Programming Foundations</div>
+    <div id="s1-rows">
+      <div class="skill-row" id="sr0" style="--accent:var(--sky)">
+        <div class="skill-icon" style="background:color-mix(in srgb,var(--sky) 12%,transparent)">🐍</div>
+        <div class="skill-name">Python Mastery</div>
+        <div class="skill-track"><div class="skill-fill" id="sf0" style="background:var(--sky)"></div></div>
+        <div class="skill-tag">Essential</div>
+      </div>
+      <div class="skill-row" id="sr1" style="--accent:var(--sky)">
+        <div class="skill-icon" style="background:color-mix(in srgb,var(--sky) 12%,transparent)">🗂️</div>
+        <div class="skill-name">Data Structures & Algorithms</div>
+        <div class="skill-track"><div class="skill-fill" id="sf1" style="background:var(--sky)"></div></div>
+        <div class="skill-tag">Core</div>
+      </div>
+      <div class="skill-row" id="sr2" style="--accent:var(--sky)">
+        <div class="skill-icon" style="background:color-mix(in srgb,var(--sky) 12%,transparent)">🔢</div>
+        <div class="skill-name">NumPy · Pandas · Matplotlib</div>
+        <div class="skill-track"><div class="skill-fill" id="sf2" style="background:var(--sky)"></div></div>
+        <div class="skill-tag">Must-have</div>
+      </div>
+      <div class="skill-row" id="sr3" style="--accent:var(--sky)">
+        <div class="skill-icon" style="background:color-mix(in srgb,var(--sky) 12%,transparent)">🐙</div>
+        <div class="skill-name">Git & Version Control</div>
+        <div class="skill-track"><div class="skill-fill" id="sf3" style="background:var(--sky)"></div></div>
+        <div class="skill-tag">Daily use</div>
+      </div>
+      <div class="skill-row" id="sr4" style="--accent:var(--sky)">
+        <div class="skill-icon" style="background:color-mix(in srgb,var(--sky) 12%,transparent)">🐧</div>
+        <div class="skill-name">Linux & Command Line</div>
+        <div class="skill-track"><div class="skill-fill" id="sf4" style="background:var(--sky)"></div></div>
+        <div class="skill-tag">Foundation</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SCENE 2 — MATH & STATS ── -->
+  <div class="scene" id="sc2">
+    <div class="scene-eyebrow" id="s2-ey" style="color:var(--amber)">02 — Mathematics & Statistics</div>
+    <div id="s2-grid">
+      <div class="math-card" id="mc0" style="--accent:var(--amber)">
+        <div class="mc-formula">∇f(x)</div>
+        <div><div class="mc-name">Linear Algebra</div><div class="mc-desc">Vectors, matrices, eigenvalues, SVD</div></div>
+      </div>
+      <div class="math-card" id="mc1" style="--accent:var(--amber)">
+        <div class="mc-formula">∂L/∂w</div>
+        <div><div class="mc-name">Calculus</div><div class="mc-desc">Derivatives, gradients, chain rule</div></div>
+      </div>
+      <div class="math-card" id="mc2" style="--accent:var(--amber)">
+        <div class="mc-formula">P(A|B)</div>
+        <div><div class="mc-name">Probability</div><div class="mc-desc">Bayes theorem, distributions</div></div>
+      </div>
+      <div class="math-card" id="mc3" style="--accent:var(--amber)">
+        <div class="mc-formula">σ, μ, r²</div>
+        <div><div class="mc-name">Statistics</div><div class="mc-desc">Hypothesis testing, regression</div></div>
+      </div>
+      <div class="math-card" id="mc4" style="--accent:var(--amber)">
+        <div class="mc-formula">argmin</div>
+        <div><div class="mc-name">Optimisation</div><div class="mc-desc">Gradient descent, Adam, SGD</div></div>
+      </div>
+      <div class="math-card" id="mc5" style="--accent:var(--amber)">
+        <div class="mc-formula">H(X)</div>
+        <div><div class="mc-name">Information Theory</div><div class="mc-desc">Entropy, KL divergence, cross-entropy</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SCENE 3 — ML CORE ── -->
+  <div class="scene" id="sc3">
+    <div class="scene-eyebrow" id="s3-ey" style="color:var(--violet)">03 — Machine Learning Core</div>
+    <div id="s3-timeline">
+      <div class="tl-col" id="tc0" style="--accent:var(--violet)">
+        <div style="position:relative">
+          <div class="tl-dot">📊</div>
+        </div>
+        <div class="tl-label">Data<br>Prep</div>
+        <div class="tl-sub">EDA · cleaning · feature engineering</div>
+      </div>
+      <div class="tl-connector-wrap" id="tw0" style="--accent:var(--violet)"><div class="tl-connector-fill" id="tf0" style="background:var(--violet)"></div></div>
+      <div class="tl-col" id="tc1" style="--accent:var(--violet)">
+        <div class="tl-dot">🤖</div>
+        <div class="tl-label">Supervised<br>Learning</div>
+        <div class="tl-sub">Linear · SVM · Trees · Ensemble</div>
+      </div>
+      <div class="tl-connector-wrap" id="tw1" style="--accent:var(--violet)"><div class="tl-connector-fill" id="tf1" style="background:var(--violet)"></div></div>
+      <div class="tl-col" id="tc2" style="--accent:var(--violet)">
+        <div class="tl-dot">🔍</div>
+        <div class="tl-label">Unsupervised<br>Learning</div>
+        <div class="tl-sub">K-Means · DBSCAN · PCA</div>
+      </div>
+      <div class="tl-connector-wrap" id="tw2" style="--accent:var(--violet)"><div class="tl-connector-fill" id="tf2" style="background:var(--violet)"></div></div>
+      <div class="tl-col" id="tc3" style="--accent:var(--violet)">
+        <div class="tl-dot">📈</div>
+        <div class="tl-label">Model<br>Evaluation</div>
+        <div class="tl-sub">Metrics · CV · Bias-variance</div>
+      </div>
+      <div class="tl-connector-wrap" id="tw3" style="--accent:var(--violet)"><div class="tl-connector-fill" id="tf3" style="background:var(--violet)"></div></div>
+      <div class="tl-col" id="tc4" style="--accent:var(--violet)">
+        <div class="tl-dot">🎯</div>
+        <div class="tl-label">Sklearn<br>Pipelines</div>
+        <div class="tl-sub">Transformers · GridSearch</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SCENE 4 — DEEP LEARNING ── -->
+  <div class="scene" id="sc4">
+    <div class="scene-eyebrow" id="s4-ey" style="color:var(--coral)">04 — Deep Learning</div>
+    <div id="s4-net">
+      <svg id="s4-svg"></svg>
+      <!-- nodes injected by JS -->
+    </div>
+    <div id="s4-pills">
+      <div class="dl-pill" id="dp0" style="--accent:var(--coral)">PyTorch</div>
+      <div class="dl-pill" id="dp1" style="--accent:var(--coral)">TensorFlow</div>
+      <div class="dl-pill" id="dp2" style="--accent:var(--coral)">Backpropagation</div>
+      <div class="dl-pill" id="dp3" style="--accent:var(--coral)">CNNs</div>
+      <div class="dl-pill" id="dp4" style="--accent:var(--coral)">RNNs / LSTMs</div>
+      <div class="dl-pill" id="dp5" style="--accent:var(--coral)">Transformers</div>
+      <div class="dl-pill" id="dp6" style="--accent:var(--coral)">Attention Mechanism</div>
+      <div class="dl-pill" id="dp7" style="--accent:var(--coral)">Regularisation</div>
+    </div>
+  </div>
+
+  <!-- ── SCENE 5 — MLOPS ── -->
+  <div class="scene" id="sc5">
+    <div class="scene-eyebrow" id="s5-ey" style="color:var(--lime)">05 — MLOps & Production</div>
+    <div style="display:flex;align-items:center;gap:40px">
+      <div id="s5-ring-wrap">
+        <svg id="s5-svg" viewBox="0 0 320 320"></svg>
+        <div id="s5-center">
+          <div id="s5-center-title">MLOps</div>
+          <div id="s5-center-sub">Pipeline</div>
+        </div>
+      </div>
+      <div id="s5-list">
+        <div class="ops-item" id="oi0" style="--accent:var(--lime)"><div class="ops-dot" style="background:var(--lime)"></div><div class="ops-text">Docker & Kubernetes</div><div class="ops-tag">Infra</div></div>
+        <div class="ops-item" id="oi1" style="--accent:var(--lime)"><div class="ops-dot" style="background:var(--lime)"></div><div class="ops-text">FastAPI / model serving</div><div class="ops-tag">Deploy</div></div>
+        <div class="ops-item" id="oi2" style="--accent:var(--lime)"><div class="ops-dot" style="background:var(--lime)"></div><div class="ops-text">MLflow · Weights & Biases</div><div class="ops-tag">Track</div></div>
+        <div class="ops-item" id="oi3" style="--accent:var(--lime)"><div class="ops-dot" style="background:var(--lime)"></div><div class="ops-text">CI/CD for ML pipelines</div><div class="ops-tag">Automate</div></div>
+        <div class="ops-item" id="oi4" style="--accent:var(--lime)"><div class="ops-dot" style="background:var(--lime)"></div><div class="ops-text">Data versioning (DVC)</div><div class="ops-tag">Version</div></div>
+        <div class="ops-item" id="oi5" style="--accent:var(--lime)"><div class="ops-dot" style="background:var(--lime)"></div><div class="ops-text">Model monitoring & drift</div><div class="ops-tag">Monitor</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SCENE 6 — LLM SPECIFIC ── -->
+  <div class="scene" id="sc6">
+    <div class="scene-eyebrow" id="s6-ey" style="color:var(--pink)">06 — LLM Engineering</div>
+    <div id="s6-cols">
+      <div class="llm-col">
+        <div class="llm-col-title" id="s6t0" style="color:var(--pink)">Architecture</div>
+        <div class="llm-item" id="li0"><div class="llm-item-icon">🧠</div><div class="llm-item-body"><div class="llm-item-title">Transformer Architecture</div><div class="llm-item-desc">Self-attention, positional encoding, encoder-decoder</div></div></div>
+        <div class="llm-item" id="li1"><div class="llm-item-icon">🔧</div><div class="llm-item-body"><div class="llm-item-title">Fine-tuning & PEFT</div><div class="llm-item-desc">LoRA, QLoRA, adapter layers</div></div></div>
+        <div class="llm-item" id="li2"><div class="llm-item-icon">📐</div><div class="llm-item-body"><div class="llm-item-title">Tokenisation</div><div class="llm-item-desc">BPE, WordPiece, SentencePiece</div></div></div>
+        <div class="llm-item" id="li3"><div class="llm-item-icon">⚡</div><div class="llm-item-body"><div class="llm-item-title">Quantisation</div><div class="llm-item-desc">INT8, GPTQ, GGUF formats</div></div></div>
+      </div>
+      <div class="llm-col">
+        <div class="llm-col-title" id="s6t1" style="color:var(--pink)">Applications</div>
+        <div class="llm-item" id="li4"><div class="llm-item-icon">🔍</div><div class="llm-item-body"><div class="llm-item-title">RAG Systems</div><div class="llm-item-desc">Vector DBs, embeddings, retrieval pipelines</div></div></div>
+        <div class="llm-item" id="li5"><div class="llm-item-icon">🤝</div><div class="llm-item-body"><div class="llm-item-title">Prompt Engineering</div><div class="llm-item-desc">Chain-of-thought, few-shot, system prompts</div></div></div>
+        <div class="llm-item" id="li6"><div class="llm-item-icon">🕸️</div><div class="llm-item-body"><div class="llm-item-title">LangChain / LlamaIndex</div><div class="llm-item-desc">Orchestration, agents, tool use</div></div></div>
+        <div class="llm-item" id="li7"><div class="llm-item-icon">🛡️</div><div class="llm-item-body"><div class="llm-item-title">RLHF & Alignment</div><div class="llm-item-desc">Safety, reward models, constitutional AI</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SCENE 7 — CLOSING ── -->
+  <div class="scene" id="sc7">
+    <div id="s7-glow"></div>
+    <div id="s7-pre">You are ready to build</div>
+    <div id="s7-title">Build the<br><span>Future.</span></div>
+    <div id="s7-pills">
+      <div class="s7-pill" id="sp0">Python ✓</div>
+      <div class="s7-pill" id="sp1">Math ✓</div>
+      <div class="s7-pill" id="sp2">ML Core ✓</div>
+      <div class="s7-pill" id="sp3">Deep Learning ✓</div>
+      <div class="s7-pill" id="sp4">MLOps ✓</div>
+      <div class="s7-pill" id="sp5">LLMs ✓</div>
+    </div>
+    <div id="s7-rule"></div>
+    <div id="s7-sub">Master these domains. Ship models. Change the world.</div>
+  </div>
+
+  <button id="replay-btn" onclick="runAnimation()">↩ replay</button>
+</div>
+
+<script>
+/* ── UTILS ── */
+const q  = id => document.getElementById(id);
+const qa = s  => document.querySelectorAll(s);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const add = (id,c) => q(id).classList.add(c);
+const rem = (id,c) => q(id).classList.remove(c);
+
+// ── rAF-based animate engine (High-Quality Mode compatible) ──
+function animate(duration, onUpdate) {
+  const start = performance.now();
+  function frame(now) {
+    const p = Math.min((now - start) / duration, 1);
+    onUpdate(p);
+    if (p < 1) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+function easeOutExpo(t) { return t === 1 ? 1 : 1 - Math.pow(2, -10 * t); }
+function easeOutBack(t) { const c1=1.70158,c3=c1+1; return 1+c3*Math.pow(t-1,3)+c1*Math.pow(t-1,2); }
+
+function countUp(elId, target, dur, suffix='') {
+  const el = q(elId);
+  const s  = performance.now();
+  const step = now => {
+    const t = Math.min((now-s)/dur,1);
+    const e = 1-Math.pow(1-t,3);
+    el.textContent = typeof target === 'string' ? target : Math.round(e*target)+suffix;
+    if(t<1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+/* ── PROGRESS + TIMER ── */
+const TOTAL = 46000;
+const ACCENT_PROG = ['#0FF4C6','#5BC8FF','#FFB547','#8B7FFF','#FF6584','#AAFF47','#F472B6','#0FF4C6'];
+let startTime=null, rafProg=null;
+
+function startProgress() {
+  startTime = performance.now();
+  const fill = q('prog-fill');
+  const timer = q('hud-right');
+  function tick(now) {
+    const el = Math.min(now-startTime, TOTAL);
+    fill.style.width = (el/TOTAL*100)+'%';
+    const s = Math.floor(el/1000);
+    timer.textContent = String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+    if(el < TOTAL) rafProg = requestAnimationFrame(tick);
+  }
+  rafProg = requestAnimationFrame(tick);
+}
+
+function setAccent(i) {
+  q('prog-fill').style.background = ACCENT_PROG[i];
+}
+
+/* ── SCENE MANAGEMENT ── */
+function showScene(id) {
+  qa('.scene').forEach(s => s.classList.remove('visible'));
+  q(id).classList.add('visible');
+}
+function hideScene(id) {
+  q(id).classList.add('exit');
+  setTimeout(() => q(id).classList.remove('visible','exit'), 900);
+}
+
+/* ══════════════════════════════
+   SCENE 0 — INTRO  0–5s
+══════════════════════════════*/
+async function runS0() {
+  setAccent(0); showScene('sc0');
+  await sleep(200);
+  animate(1400, p => q('s0-bg-grid').style.opacity = p);
+  await sleep(400);
+  animate(600, p => {
+    const ep = easeOutExpo(p);
+    q('s0-chip').style.opacity = ep;
+    q('s0-chip').style.transform = `translateY(${(1-ep)*10}px)`;
+  });
+  await sleep(400);
+  const words = qa('#s0-title .s0w');
+  for(let i=0;i<words.length;i++){
+    await sleep(i===0?0:160);
+    const w = words[i];
+    animate(600, p => {
+      const ep = easeOutBack(p);
+      w.style.opacity = p;
+      w.style.transform = `translateY(${(1-ep)*56}px) skewY(${(1-ep)*3}deg)`;
+    });
+  }
+  await sleep(300); 
+  animate(1300, p => q('s0-rule').style.width = `${easeOutBack(p)*180}px`);
+  await sleep(350); 
+  animate(800, p => {
+    q('s0-sub').style.opacity = p;
+    q('s0-sub').style.transform = `translateY(${(1-p)*8}px)`;
+  });
+  await sleep(400);
+  ['b0','b1','b2'].forEach((id,i)=>setTimeout(()=>{
+    animate(550, p => {
+      const ep = easeOutBack(p);
+      q(id).style.opacity = p;
+      q(id).style.transform = `scale(${0.88 + ep*0.12})`;
+    });
+  }, i*160));
+  await sleep(2400); hideScene('sc0');
+}
+
+/* ══════════════════════════════
+   SCENE 1 — FOUNDATIONS  5–11s
+══════════════════════════════*/
+const SF_WIDTHS = [96, 88, 92, 82, 78];
+async function runS1() {
+  setAccent(1); await sleep(400); showScene('sc1');
+  await sleep(300); 
+  animate(700, p => q('s1-ey').style.opacity = p);
+  await sleep(500);
+  for(let i=0;i<5;i++){
+    await sleep(i===0?0:190);
+    animate(550, p => {
+      const ep = easeOutBack(p);
+      q('sr'+i).style.opacity = p;
+      q('sr'+i).style.transform = `translateX(${(1-ep)*-22}px)`;
+      const tags = q('sr'+i).querySelectorAll('.skill-tag');
+      tags.forEach(t => t.style.opacity = p);
+    });
+    setTimeout(()=>{ 
+      animate(1100, p => q('sf'+i).style.width = `${SF_WIDTHS[i]*easeOutBack(p)}%`);
+    }, 300);
+  }
+  await sleep(3000); hideScene('sc1');
+}
+
+/* ══════════════════════════════
+   SCENE 2 — MATH  11–16s
+══════════════════════════════*/
+async function runS2() {
+  setAccent(2); await sleep(400); showScene('sc2');
+  await sleep(300); 
+  animate(700, p => q('s2-ey').style.opacity = p);
+  await sleep(400);
+  for(let i=0;i<6;i++){
+    await sleep(i===0?0:160);
+    const mc = q('mc'+i);
+    animate(500, p => {
+      const ep = easeOutBack(p);
+      mc.style.opacity = p;
+      mc.style.transform = `scale(${0.86 + ep*0.14}) translateY(${(1-ep)*12}px)`;
+      const desc = mc.querySelector('.mc-desc');
+      if(desc) { desc.style.opacity = p; desc.style.transform = `translateY(${(1-p)*4}px)`; }
+    });
+    setTimeout(()=>{
+      mc.style.borderColor = 'var(--accent)';
+      mc.style.background = 'color-mix(in srgb,var(--accent) 8%,var(--s0))';
+      setTimeout(()=>{ mc.style.borderColor = ''; mc.style.background = ''; },900);
+    },350);
+  }
+  await sleep(2800); hideScene('sc2');
+}
+
+/* ══════════════════════════════
+   SCENE 3 — ML CORE  16–22s
+══════════════════════════════*/
+async function runS3() {
+  setAccent(3); await sleep(400); showScene('sc3');
+  await sleep(300); 
+  animate(700, p => q('s3-ey').style.opacity = p);
+  await sleep(500);
+  for(let i=0;i<5;i++){
+    await sleep(i===0?0:500);
+    const tc = q('tc'+i);
+    animate(600, p => {
+      const ep = easeOutBack(p);
+      tc.style.opacity = p;
+      tc.style.transform = `translateY(${(1-ep)*20}px)`;
+      const sub = tc.querySelector('.tl-sub');
+      if(sub) sub.style.opacity = p;
+    });
+    const dot = tc.querySelector('.tl-dot');
+    setTimeout(() => {
+      dot.style.borderColor = 'var(--accent)';
+      dot.style.background = 'color-mix(in srgb,var(--accent) 15%,transparent)';
+      animate(400, p => dot.style.transform = `scale(${1 + easeOutBack(p)*0.15})`);
+    }, 200);
+    if(i<4){
+      await sleep(100);
+      animate(900, p => q('tf'+i).style.width = `${easeOutBack(p)*100}%`);
+    }
+  }
+  await sleep(2200); hideScene('sc3');
+}
+
+/* ══════════════════════════════
+   SCENE 4 — DEEP LEARNING  22–28s
+══════════════════════════════*/
+function buildNeuralNet() {
+  const net = q('s4-net');
+  const svg = q('s4-svg');
+  qa('#s4-net .net-node').forEach(n=>n.remove());
+  svg.innerHTML = '';
+
+  const LAYERS = [
+    {x:40,  nodes:3, label:'Input'},
+    {x:170, nodes:5, label:'Hidden 1'},
+    {x:300, nodes:5, label:'Hidden 2'},
+    {x:430, nodes:4, label:'Hidden 3'},
+    {x:530, nodes:2, label:'Output'},
+  ];
+  const H = 280;
+  const allNodes = [];
+
+  LAYERS.forEach((layer, li) => {
+    const nodes = [];
+    for(let ni=0;ni<layer.nodes;ni++){
+      const y = (H/(layer.nodes+1)) * (ni+1);
+      const el = document.createElement('div');
+      el.className = 'net-node';
+      el.id = `nn_${li}_${ni}`;
+      el.style.left = (layer.x - 14)+'px';
+      el.style.top  = (y - 14)+'px';
+      el.style.setProperty('--accent','var(--coral)');
+      net.appendChild(el);
+      nodes.push({x:layer.x, y, el, li, ni});
+    }
+    const lbl = document.createElement('div');
+    lbl.className = 'net-layer-label';
+    lbl.textContent = layer.label;
+    lbl.style.left = layer.x+'px';
+    lbl.style.bottom = '-24px';
+    net.appendChild(lbl);
+    allNodes.push(nodes);
+  });
+
+  for(let li=0;li<LAYERS.length-1;li++){
+    allNodes[li].forEach(a=>{
+      allNodes[li+1].forEach(b=>{
+        const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+        line.setAttribute('x1',a.x); line.setAttribute('y1',a.y);
+        line.setAttribute('x2',b.x); line.setAttribute('y2',b.y);
+        line.id = `nl_${a.li}_${a.ni}_${b.ni}`;
+        svg.appendChild(line);
+      });
+    });
+  }
+  return allNodes;
+}
+
+async function runS4() {
+  setAccent(4); await sleep(400); showScene('sc4');
+  await sleep(300); 
+  animate(700, p => q('s4-ey').style.opacity = p);
+  await sleep(300);
+  const allNodes = buildNeuralNet();
+
+  for(let li=0;li<allNodes.length;li++){
+    await sleep(li===0?0:280);
+    for(let ni=0;ni<allNodes[li].length;ni++){
+      setTimeout(()=>{
+        const el = q(`nn_${li}_${ni}`);
+        animate(450, p => {
+          const ep = easeOutBack(p);
+          el.style.opacity = p;
+          el.style.transform = `scale(${ep})`;
+        });
+        setTimeout(()=>{
+          el.style.borderColor = 'var(--accent)';
+          el.style.background = 'color-mix(in srgb,var(--accent) 20%,var(--s0))';
+          el.style.boxShadow = '0 0 12px color-mix(in srgb,var(--accent) 40%,transparent)';
+          if(li>0){
+            allNodes[li-1].forEach(prev=>{
+              const line = q(`nl_${prev.li}_${prev.ni}_${ni}`);
+              if(line) {
+                line.style.stroke = 'color-mix(in srgb,var(--accent) 50%,transparent)';
+                line.style.strokeWidth = '1.2';
+              }
+            });
+          }
+          setTimeout(()=>{
+            el.style.borderColor = '';
+            el.style.background = 'var(--s0)';
+            el.style.boxShadow = '';
+          },600);
+        },200);
+      }, ni*80);
+    }
+  }
+  await sleep(1200);
+  for(let i=0;i<8;i++){
+    await sleep(i===0?0:110);
+    const dp = q('dp'+i);
+    animate(500, p => {
+      const ep = easeOutBack(p);
+      dp.style.opacity = p;
+      dp.style.transform = `translateY(${(1-ep)*8}px) scale(${0.94 + ep*0.06})`;
+    });
+    setTimeout(()=>{
+      dp.style.borderColor = 'var(--accent)';
+      dp.style.color = 'var(--accent)';
+      setTimeout(()=>{ dp.style.borderColor = ''; dp.style.color = ''; },600);
+    },200);
+  }
+  await sleep(2400); hideScene('sc4');
+}
+
+/* ══════════════════════════════
+   SCENE 5 — MLOPS  28–34s
+══════════════════════════════*/
+const PIPE_STEPS = [
+  {label:'Train',    icon:'🏋️', angle:-90},
+  {label:'Validate', icon:'✅', angle:-30},
+  {label:'Package',  icon:'📦', angle:30},
+  {label:'Deploy',   icon:'🚀', angle:90},
+  {label:'Monitor',  icon:'📡', angle:150},
+  {label:'Retrain',  icon:'🔄', angle:210},
+];
+
+function buildPipeline() {
+  const svg = q('s5-svg');
+  svg.innerHTML = '';
+  const cx=160, cy=160, r=120;
+  const circle = document.createElementNS('http://www.w3.org/2000/svg','circle');
+  circle.setAttribute('cx',cx); circle.setAttribute('cy',cy);
+  circle.setAttribute('r',r); circle.setAttribute('fill','none');
+  circle.setAttribute('stroke','rgba(255,255,255,0.06)');
+  circle.setAttribute('stroke-width','1');
+  svg.appendChild(circle);
+
+  const prog = document.createElementNS('http://www.w3.org/2000/svg','circle');
+  prog.setAttribute('cx',cx); prog.setAttribute('cy',cy);
+  prog.setAttribute('r',r); prog.setAttribute('fill','none');
+  prog.setAttribute('stroke','var(--lime)');
+  prog.setAttribute('stroke-width','1.5');
+  const circ = 2*Math.PI*r;
+  prog.setAttribute('stroke-dasharray',circ);
+  prog.setAttribute('stroke-dashoffset',circ);
+  prog.setAttribute('stroke-linecap','round');
+  prog.setAttribute('transform',`rotate(-90 ${cx} ${cy})`);
+  prog.id = 's5-prog-ring';
+  svg.appendChild(prog);
+
+  PIPE_STEPS.forEach((step, i) => {
+    const rad = step.angle * Math.PI/180;
+    const x = cx + r*Math.cos(rad);
+    const y = cy + r*Math.sin(rad);
+
+    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+    g.id = `pstep_${i}`;
+    g.setAttribute('transform',`translate(${x},${y})`);
+    g.style.opacity='0';
+    g.style.transform='scale(0.6)';
+    g.style.transformOrigin=`${x}px ${y}px`;
+
+    const bg = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    bg.setAttribute('r','18'); bg.setAttribute('fill','#0B0E1A');
+    bg.setAttribute('stroke','rgba(255,255,255,0.1)'); bg.setAttribute('stroke-width','1');
+    g.appendChild(bg);
+
+    const txt = document.createElementNS('http://www.w3.org/2000/svg','text');
+    txt.setAttribute('text-anchor','middle');
+    txt.setAttribute('dominant-baseline','central');
+    txt.setAttribute('font-size','14');
+    txt.textContent = step.icon;
+    g.appendChild(txt);
+
+    const lbl = document.createElementNS('http://www.w3.org/2000/svg','text');
+    lbl.setAttribute('text-anchor','middle');
+    lbl.setAttribute('y','28');
+    lbl.setAttribute('font-size','8');
+    lbl.setAttribute('fill','rgba(232,230,240,0.4)');
+    lbl.setAttribute('font-family','JetBrains Mono, monospace');
+    lbl.setAttribute('letter-spacing','0.1em');
+    lbl.textContent = step.label.toUpperCase();
+    g.appendChild(lbl);
+
+    svg.appendChild(g);
+  });
+}
+
+async function runS5() {
+  setAccent(5); await sleep(400); showScene('sc5');
+  buildPipeline();
+  await sleep(300); 
+  animate(700, p => q('s5-ey').style.opacity = p);
+  await sleep(400);
+
+  setTimeout(()=>{
+    const ring = q('s5-prog-ring');
+    const circ = 2*Math.PI*120;
+    const targetOffset = circ*0.08;
+    animate(3000, p => ring.style.strokeDashoffset = circ - ((circ - targetOffset) * easeOutExpo(p)));
+  }, 300);
+
+  for(let i=0;i<6;i++){
+    await sleep(i===0?0:300);
+    const g = q(`pstep_${i}`);
+    animate(500, p => {
+      const ep = easeOutBack(p);
+      g.style.opacity = p;
+      g.style.transform = `scale(${0.6 + ep*0.4})`;
+    });
+  }
+
+  await sleep(500);
+  for(let i=0;i<6;i++){
+    await sleep(i===0?0:200);
+    const oi = q('oi'+i);
+    animate(500, p => {
+      const ep = easeOutBack(p);
+      oi.style.opacity = p;
+      oi.style.transform = `translateX(${(1-ep)*16}px)`;
+      const dot = oi.querySelector('.ops-dot');
+      if(dot) dot.style.transform = `scale(${1 + ep*0.4})`;
+    });
+  }
+  await sleep(2200); hideScene('sc5');
+}
+
+/* ══════════════════════════════
+   SCENE 6 — LLM  34–40s
+══════════════════════════════*/
+async function runS6() {
+  setAccent(6); await sleep(400); showScene('sc6');
+  await sleep(300); 
+  animate(700, p => q('s6-ey').style.opacity = p);
+  await sleep(400);
+  animate(700, p => { q('s6t0').style.opacity = p; q('s6t1').style.opacity = p; });
+  await sleep(300);
+  for(let i=0;i<8;i++){
+    await sleep(i===0?0:200);
+    const li = q('li'+i);
+    animate(500, p => {
+      const ep = easeOutBack(p);
+      li.style.opacity = p;
+      li.style.transform = `translateY(${(1-ep)*10}px)`;
+    });
+  }
+  await sleep(2800); hideScene('sc6');
+}
+
+/* ══════════════════════════════
+   SCENE 7 — CLOSING  40–46s
+══════════════════════════════*/
+async function runS7() {
+  setAccent(7); await sleep(400); showScene('sc7');
+  animate(2000, p => q('s7-glow').style.opacity = p);
+  await sleep(300); 
+  animate(700, p => { q('s7-pre').style.opacity = p; q('s7-pre').style.transform = `translateY(${(1-p)*8}px)`; });
+  await sleep(500); 
+  animate(1000, p => {
+    const ep = easeOutBack(p);
+    q('s7-title').style.opacity = p;
+    q('s7-title').style.transform = `scale(${0.9 + ep*0.1})`;
+  });
+  await sleep(600);
+  for(let i=0;i<6;i++){
+    await sleep(i===0?0:140);
+    const sp = q('sp'+i);
+    animate(500, p => {
+      const ep = easeOutBack(p);
+      sp.style.opacity = p;
+      sp.style.transform = `translateY(${(1-ep)*8}px) scale(${0.94 + ep*0.06})`;
+    });
+    setTimeout(()=>{
+      sp.style.borderColor = 'var(--teal)';
+      sp.style.color = 'var(--teal)';
+      setTimeout(()=>{ sp.style.borderColor = ''; sp.style.color = ''; },600);
+    },250+i*80);
+  }
+  await sleep(700); 
+  animate(1500, p => q('s7-rule').style.width = `${easeOutBack(p)*220}px`);
+  await sleep(400); 
+  animate(800, p => { q('s7-sub').style.opacity = p; q('s7-sub').style.transform = `translateY(${(1-p)*6}px)`; });
+  await sleep(1400); 
+  animate(500, p => {
+    const btn = q('replay-btn');
+    btn.style.opacity = p;
+    btn.style.pointerEvents = p === 1 ? 'auto' : 'none';
+  });
+}
+
+/* ══════════════════════════════
+   RESET
+══════════════════════════════*/
+function resetAll() {
+  cancelAnimationFrame(rafProg);
+  q('prog-fill').style.width='0%';
+  q('hud-right').textContent='00:00';
+  qa('.scene').forEach(s=>s.classList.remove('visible','exit'));
+  rem('replay-btn','in');
+}
+
+/* ══════════════════════════════
+   ORCHESTRATOR
+══════════════════════════════*/
+let running = false;
+
+async function runAnimation() {
+  if(running) return;
+  running = true;
+  resetAll();
+  await sleep(80);
+  animate(600, p => q('hud').style.opacity = p);
+  startProgress();
+
+  await runS0();  // 0–5s
+  await sleep(200);
+  await runS1();  // 5–11s
+  await sleep(200);
+  await runS2();  // 11–16s
+  await sleep(200);
+  await runS3();  // 16–22s
+  await sleep(200);
+  await runS4();  // 22–28s
+  await sleep(200);
+  await runS5();  // 28–34s
+  await sleep(200);
+  await runS6();  // 34–40s
+  await sleep(200);
+  await runS7();  // 40–46s
+
+  running = false;
+}
+
+setTimeout(runAnimation, 600);
+</script>
+<script src="https://unpkg.com/twemoji@latest/dist/twemoji.min.js" crossorigin="anonymous"></script>
+<script>
+  window.addEventListener('load', function() {
+    twemoji.parse(document.body, { 
+      base: 'https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/',
+      folder: 'svg', 
+      ext: '.svg' 
+    });
+  });
+</script>
+<style>
+  img.emoji { width: 1em; height: 1em; margin: 0 .05em 0 .1em; vertical-align: -0.1em; display: inline-block; }
+</style>
+</body>
+</html>
