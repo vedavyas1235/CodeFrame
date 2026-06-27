@@ -156,12 +156,10 @@ window.addEventListener('message', async (e) => {
           }
         }
 
-        const dpr = window.devicePixelRatio || 1;
         const blob = await window.htmlToImage.toBlob(document.documentElement, {
-          width: width * dpr,
-          height: height * dpr,
+          width: width,
+          height: height,
           pixelRatio: 1,
-          style: { transform: 'scale(' + dpr + ')', transformOrigin: 'top left' },
           type: 'image/jpeg',
           quality: 0.97,
           backgroundColor: '#ffffff',
