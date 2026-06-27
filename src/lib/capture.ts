@@ -161,7 +161,7 @@ window.addEventListener('message', async (e) => {
           width: width * dpr,
           height: height * dpr,
           pixelRatio: 1,
-          style: { transform: `scale(${dpr})`, transformOrigin: 'top left' },
+          style: { transform: 'scale(' + dpr + ')', transformOrigin: 'top left' },
           type: 'image/jpeg',
           quality: 0.97,
           backgroundColor: '#ffffff',
