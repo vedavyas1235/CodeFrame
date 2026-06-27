@@ -10,8 +10,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-const PROMPT_TEXT = `### CRITICAL RENDERING CONSTRAINTS FOR HIGH-QUALITY VIDEO EXPORT
-This HTML file will be fed into a DOM-snapshot rendering engine to generate a high-quality MP4 video. To ensure perfect rendering without missing fonts, frozen animations, or CORS crashes, you MUST adhere strictly to these rules:
+const PROMPT_TEXT = `This HTML file will be fed into a DOM-snapshot rendering engine to generate a high-quality MP4 video. To ensure perfect rendering without missing fonts, frozen animations, or CORS crashes, you MUST adhere strictly to these rules:
 
 1. **USE JS ANIMATIONS (NO CSS TRANSITIONS)**: You are strictly forbidden from using CSS \`transition\` for animations. Because the engine freezes time to take DOM snapshots, CSS transitions (which rely on the physical real-time clock) will permanently freeze at 0%. You MUST use JavaScript-based animation libraries (like GSAP or Anime.js) or \`requestAnimationFrame\` instead. CSS \`@keyframes\` are allowed but JS animations are strongly preferred.
 2. **CORS FOR EXTERNAL FONTS**: If you include external fonts (e.g., Google Fonts), you MUST add \`crossorigin="anonymous"\` to the \`<link>\` tag. Without this, the engine will throw a SecurityError when trying to embed the font rules, causing all text to break.

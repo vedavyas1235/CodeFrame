@@ -10,8 +10,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-const PROMPT_TEXT = `### CRITICAL RENDERING CONSTRAINTS FOR VIDEO EXPORT
-This HTML file will be fed into a "Canvas Extractor" engine to be rendered into an MP4 video. To ensure the text and graphics are captured successfully, you MUST adhere to the following strict rules:
+const PROMPT_TEXT = `This HTML file will be fed into a "Canvas Extractor" engine to be rendered into an MP4 video. To ensure the text and graphics are captured successfully, you MUST adhere to the following strict rules:
 
 1. **PURE CANVAS ONLY**: The entire visual output MUST be rendered inside a single, full-screen \`<canvas>\` element. 
 2. **NO HTML/DOM TEXT**: You are strictly forbidden from using HTML tags (like \`<h1>\`, \`<div>\`, \`<span>\`, \`<p>\`, etc.) to display text, titles, or UI elements. 
