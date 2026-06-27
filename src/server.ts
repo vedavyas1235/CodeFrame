@@ -87,14 +87,13 @@ export default {
           try {
             const fs = await import('fs');
             const envFile = fs.readFileSync('.env', 'utf-8');
-            if (!apiKey) {
-              const matchKey = envFile.match(/STUDIO_API_KEY\s*=\s*"?([^"\n]+)"?/);
-              if (matchKey) apiKey = matchKey[1];
-            }
-            if (!backendStr) {
-              const matchUrl = envFile.match(/STUDIO_BACKEND_URL\s*=\s*"?([^"\n]+)"?/);
-              if (matchUrl) backendStr = matchUrl[1];
-            }
+            
+            // Prioritize the raw .env file to prevent Vite's dotenv-expand from deleting '$' characters
+            const matchKey = envFile.match(/STUDIO_API_KEY\s*=\s*"?([^"\n]+)"?/);
+            if (matchKey) apiKey = matchKey[1];
+            
+            const matchUrl = envFile.match(/STUDIO_BACKEND_URL\s*=\s*"?([^"\n]+)"?/);
+            if (matchUrl) backendStr = matchUrl[1];
           } catch (e) {}
         }
         
