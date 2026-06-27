@@ -353,10 +353,11 @@ function requestIframeFrame(
     window.addEventListener('message', handler);
     win.postMessage({ type: 'capture-frame', timeMs, mode, width, height }, '*');
     
+    // The very first frame in HQ mode downloads and caches all fonts/images, which can easily take 20-40s on slower networks.
     setTimeout(() => {
       window.removeEventListener('message', handler);
       reject(new Error("Iframe did not respond to frame capture request."));
-    }, 15000);
+    }, 60000);
   });
 }
 
