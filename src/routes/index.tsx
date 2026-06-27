@@ -132,6 +132,21 @@ function StudioPage() {
     a.remove();
   }
 
+  useEffect(() => {
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === 'visible' && busy && 'wakeLock' in navigator) {
+        try {
+          wakeLockRef.current = await (navigator as any).wakeLock.request('screen');
+          console.log("Wake Lock re-acquired upon returning to tab.");
+        } catch (err) {
+          console.warn("Wake Lock re-acquire failed:", err);
+        }
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, [busy]);
+
   async function handleConvert() {
     if (!html || !iframeRef.current) return;
 
@@ -151,6 +166,9 @@ function StudioPage() {
     try {
       if ('wakeLock' in navigator) {
         wakeLockRef.current = await (navigator as any).wakeLock.request('screen');
+        console.log("Wake Lock successfully acquired!");
+      } else {
+        console.warn("Wake Lock API not supported in this browser.");
       }
     } catch (err) {
       console.warn("Wake Lock request failed:", err);
