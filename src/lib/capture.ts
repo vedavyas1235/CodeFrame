@@ -177,16 +177,9 @@ window.addEventListener('message', async (e) => {
         ctx.drawImage(domSnap, 0, 0, width, height);
         domSnap.close();
         
-        const canvases = Array.from(document.querySelectorAll("canvas"));
-        const videos = Array.from(document.querySelectorAll("video"));
-        const drawEl = (el) => {
-          const r = el.getBoundingClientRect();
-          if (r.width > 0 && r.height > 0) {
-            try { ctx.drawImage(el, r.left, r.top, r.width, r.height); } catch(e){}
-          }
-        };
-        canvases.forEach(drawEl);
-        videos.forEach(drawEl);
+        // Note: html-to-image inherently captures canvases and videos respecting z-index.
+        // We do NOT manually redraw them here, as doing so draws background canvases
+        // over top of foreground text.
         
         bitmap = off.transferToImageBitmap();
       }
