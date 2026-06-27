@@ -33,55 +33,56 @@ export function PromptInfoHQ() {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm" className="gap-2 text-muted-foreground hover:text-foreground">
-          <Info className="w-4 h-4" />
+        <Button variant="ghost" size="sm" className="h-5 px-2 gap-1 rounded-full text-[10px] font-medium text-muted-foreground hover:text-foreground hover:bg-background/50 transition-colors">
+          <Info className="w-2.5 h-2.5" />
           <span>HQ Mode Prompt</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-3xl p-0 overflow-hidden bg-background border-border shadow-2xl sm:rounded-2xl flex flex-col max-h-[85vh]">
-        
+      <DialogContent className="w-[calc(100%-2rem)] sm:max-w-[700px] p-0 overflow-hidden bg-background border-border shadow-2xl sm:rounded-2xl transition-all">
         {/* Header section */}
-        <div className="px-6 py-5 border-b border-border/40 bg-muted/20 flex-none">
+        <div className="px-6 pt-3 pb-1.5 bg-muted/10">
           <DialogHeader>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-md bg-primary/10 text-primary">
-                  <Sparkles className="w-4 h-4" />
-                </div>
-                <DialogTitle className="text-xl font-display">AI Prompt for High-Quality Mode</DialogTitle>
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-md bg-primary/10 text-primary">
+                <Sparkles className="w-4 h-4" />
               </div>
-              
-              <Button 
-                size="sm" 
-                onClick={handleCopy}
-                className={`gap-2 transition-all duration-300 ${copied ? 'bg-green-500 hover:bg-green-600 text-white' : ''}`}
-              >
-                {copied ? (
-                  <>
-                    <Check className="w-4 h-4" />
-                    Copied to Clipboard
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-4 h-4" />
-                    Copy Prompt
-                  </>
-                )}
-              </Button>
+              <DialogTitle className="text-lg font-display tracking-tight">AI Prompt for High-Quality Mode</DialogTitle>
             </div>
-            <DialogDescription className="mt-3 text-[15px] leading-relaxed max-w-[90%]">
-              Appending this prompt to your AI instructions (ChatGPT, Claude, etc.) forces the AI to build complex UI animations using techniques that our High-Quality engine can perfectly capture (e.g., using GSAP instead of CSS transitions).
+            <DialogDescription className="mt-1 text-xs leading-relaxed opacity-90 max-w-[95%]">
+              Appending this prompt to your AI instructions forces the AI to build complex UI animations using techniques that our High-Quality engine can perfectly capture (e.g., using GSAP instead of CSS transitions).
             </DialogDescription>
           </DialogHeader>
         </div>
         
-        {/* Scrollable code area */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden p-6 custom-scrollbar bg-zinc-950 dark:bg-zinc-950/80">
-          <pre className="font-mono text-[13px] leading-relaxed text-zinc-300 whitespace-pre-wrap break-words">
-            <code className="block">{PROMPT_TEXT}</code>
-          </pre>
+        {/* Code area - fits without scrolling */}
+        <div className="px-6 pb-1.5">
+          <div className="p-2 bg-zinc-950 dark:bg-zinc-950/80 rounded-lg border border-border/40">
+            <pre className="font-mono text-[11px] leading-snug text-zinc-300 whitespace-pre-wrap break-words">
+              <code className="block">{PROMPT_TEXT}</code>
+            </pre>
+          </div>
         </div>
 
+        {/* Footer */}
+        <div className="px-6 py-2 border-t border-border/40 bg-muted/20 flex justify-end">
+          <Button 
+            size="sm" 
+            onClick={handleCopy}
+            className={`h-8 gap-2 text-xs transition-all duration-300 ${copied ? 'bg-green-500 hover:bg-green-600 text-white' : ''}`}
+          >
+            {copied ? (
+              <>
+                <Check className="w-3.5 h-3.5" />
+                Copied to Clipboard
+              </>
+            ) : (
+              <>
+                <Copy className="w-3.5 h-3.5" />
+                Copy Prompt
+              </>
+            )}
+          </Button>
+        </div>
       </DialogContent>
     </Dialog>
   );

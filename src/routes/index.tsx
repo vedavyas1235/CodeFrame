@@ -78,6 +78,7 @@ function StudioPage() {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const signalRef = useRef<CaptureSignal>({ cancelled: false });
   const viewStateRef = useRef({ zoom: 1, panX: res.width / 2, panY: res.height / 2 });
+  const wakeLockRef = useRef<any>(null);
 
   // Update view state center when orientation changes so it doesn't get stuck
   useEffect(() => {
@@ -88,19 +89,16 @@ function StudioPage() {
     if (typeof window !== "undefined" && !window.VideoEncoder) {
       setHasWebCodecs(false);
     }
-  }, []);
+    return () => {
+      if (outUrl) URL.revokeObjectURL(outUrl);
+    };
+  }, [outUrl]);
 
   // Load preview HTML into iframe whenever html changes (no shim for preview)
   useEffect(() => {
     if (!html || !iframeRef.current) return;
     void loadIframeWithHtml(iframeRef.current, html, false);
   }, [html]);
-
-  useEffect(() => {
-    return () => {
-      if (outUrl) URL.revokeObjectURL(outUrl);
-    };
-  }, [outUrl]);
 
   useEffect(() => {
     const handleBeforeUnload = () => {
@@ -137,10 +135,9 @@ function StudioPage() {
   async function handleConvert() {
     if (!html || !iframeRef.current) return;
 
-    // Block Quick Mode for complex DOM animations
     if (method === "realtime" && analysis?.requiresStudio) {
       toast.error("Complex animation detected", {
-        description: "Quick Mode only supports pure Canvas animations. Please select High Quality or Studio Mode to capture DOM text and CSS.",
+        description: "Quick Mode is optimized for simple graphics. Please select High Quality or Studio Mode to correctly capture standard text and complex layouts.",
         duration: 5000,
       });
       return;
@@ -150,9 +147,18 @@ function StudioPage() {
     setError(null);
     setOutUrl(null);
     signalRef.current = { cancelled: false };
+
     try {
-      // Quick mode (realtime) and High Quality (tabcapture) use the synthetic time shim
-      // Realtime uses it for deterministic extraction, tabcapture uses it for Time Dilation
+      if ('wakeLock' in navigator) {
+        wakeLockRef.current = await (navigator as any).wakeLock.request('screen');
+      }
+    } catch (err) {
+      console.warn("Wake Lock request failed:", err);
+    }
+
+    try {
+      // Quick mode (realtime) uses it for deterministic extraction
+      // High Quality mode (hq) uses it to perfectly freeze physics while snapshotting the DOM
       const needShim = method === "realtime" || method === "tabcapture";
       await loadIframeWithHtml(iframeRef.current, html, needShim);
 
@@ -207,6 +213,10 @@ function StudioPage() {
       setError(e instanceof Error ? e.message : "Conversion failed.");
     } finally {
       setBusy(false);
+      if (wakeLockRef.current) {
+        wakeLockRef.current.release().catch(console.warn);
+        wakeLockRef.current = null;
+      }
     }
   }
 
@@ -228,7 +238,7 @@ function StudioPage() {
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      <SiteHeader />
+      <SiteHeader busy={busy} />
       <main className="flex-1 min-h-0 overflow-hidden">
         {!html ? (
           <section className="h-full overflow-y-auto">
@@ -259,14 +269,19 @@ function StudioPage() {
             </div>
             <div className="mt-12 grid sm:grid-cols-3 gap-6 text-sm">
               {[
-                ["Three capture modes", "Quick auto-routing, frame-stepped, and Tab Capture for complex animations."],
+                ["Three capture modes", "Quick auto-routing, High Quality Mode, and Studio Mode for complex animations."],
                 ["No uploads", "Everything runs locally — your file never leaves your device."],
                 ["MP4 out of the box", "H.264 with faststart, ready to share or post."],
               ].map(([t, b]) => (
                 <div key={t}>
                   <div className="mb-2 h-px w-8 bg-primary" />
-                  <h3 className="font-display text-lg">{t}</h3>
-                  <p className="text-muted-foreground mt-1">{b}</p>
+                  <h3 className="font-display text-lg">
+                    {t === "No uploads" ? <>No uploads<span className="text-[10px] text-muted-foreground align-top ml-0.5">*</span></> : t}
+                  </h3>
+                  <p className="text-muted-foreground mt-1">
+                    {b}
+                    {t === "No uploads" && <span className="block mt-1.5 text-[10px] opacity-60 leading-tight">* Studio Mode utilizes secure cloud rendering for maximum quality.</span>}
+                  </p>
                 </div>
               ))}
             </div>
@@ -341,7 +356,7 @@ function StudioPage() {
 
               <div>
                 <h3 className="font-display text-xl mb-3">Capture mode</h3>
-                <MethodPicker value={method} onChange={setMethod} hasWebCodecs={hasWebCodecs} />
+                <MethodPicker value={method} onChange={setMethod} hasWebCodecs={hasWebCodecs} busy={busy} />
               </div>
 
               <div className="space-y-5 rounded-xl border border-border bg-card p-5">
@@ -352,7 +367,7 @@ function StudioPage() {
                   </Label>
                   <div className="mt-2 flex gap-2 flex-wrap">
                     {RESOLUTIONS.map((r, i) => {
-                      const isDisabled = method !== "studio" && (r.label.includes("2K") || r.label.includes("4K"));
+                      const isDisabled = busy || (method !== "studio" && (r.label.includes("2K") || r.label.includes("4K")));
                       return (
                         <button
                           key={r.label}
@@ -383,10 +398,13 @@ function StudioPage() {
                   <div className="mt-2 flex gap-2">
                     <button
                       id="orient-landscape"
+                      disabled={busy}
                       onClick={() => setOrientation("landscape")}
                       className={`px-3 py-1.5 rounded-md text-sm border transition-colors ${
                         orientation === "landscape"
                           ? "border-primary bg-primary/10 text-foreground"
+                          : busy
+                          ? "border-border/50 text-muted-foreground/30 cursor-not-allowed"
                           : "border-border text-muted-foreground hover:text-foreground"
                       }`}
                     >
@@ -394,10 +412,13 @@ function StudioPage() {
                     </button>
                     <button
                       id="orient-portrait"
+                      disabled={busy}
                       onClick={() => setOrientation("portrait")}
                       className={`px-3 py-1.5 rounded-md text-sm border transition-colors ${
                         orientation === "portrait"
                           ? "border-primary bg-primary/10 text-foreground"
+                          : busy
+                          ? "border-border/50 text-muted-foreground/30 cursor-not-allowed"
                           : "border-border text-muted-foreground hover:text-foreground"
                       }`}
                     >
@@ -423,7 +444,8 @@ function StudioPage() {
                     min={1}
                     max={60}
                     step={1}
-                    className="mt-3"
+                    disabled={busy}
+                    className={`mt-3 ${busy ? 'opacity-50 cursor-not-allowed' : ''}`}
                   />
                 </div>
 
@@ -437,10 +459,13 @@ function StudioPage() {
                       <button
                         key={f}
                         id={`fps-btn-${f}`}
+                        disabled={busy}
                         onClick={() => setFps(f)}
                         className={`px-3 py-1.5 rounded-md text-sm border transition-colors ${
                           f === fps
                             ? "border-primary bg-primary/10 text-foreground"
+                            : busy
+                            ? "border-border/50 text-muted-foreground/30 cursor-not-allowed"
                             : "border-border text-muted-foreground hover:text-foreground"
                         }`}
                       >
@@ -479,7 +504,7 @@ function StudioPage() {
                   <div className="flex items-center gap-2 text-sm">
                     <Loader2 className="h-4 w-4 animate-spin text-primary" />
                     <span className="capitalize">{progress.stage}</span>
-                    {progress.total ? (
+                    {progress.total && method !== "studio" ? (
                       <span className="text-muted-foreground tabular-nums">
                         · frame {progress.current}/{progress.total}
                       </span>

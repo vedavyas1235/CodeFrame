@@ -127,6 +127,17 @@ window.addEventListener('message', async (e) => {
       } else if (mode === 'hq') {
         if (!window.htmlToImage) throw new Error("html-to-image not loaded inside iframe.");
         
+        // Persistent OffscreenCanvas allocation
+        if (!window.__hqCanvas) {
+          window.__hqCanvas = new OffscreenCanvas(width, height);
+          window.__hqCtx = window.__hqCanvas.getContext('2d', { alpha: false, desynchronized: true });
+        } else if (window.__hqCanvas.width !== width || window.__hqCanvas.height !== height) {
+          window.__hqCanvas.width = width;
+          window.__hqCanvas.height = height;
+        }
+        const off = window.__hqCanvas;
+        const ctx = window.__hqCtx;
+        
         document.documentElement.style.width = width + 'px';
         document.documentElement.style.height = height + 'px';
         document.documentElement.style.overflow = 'hidden';
@@ -150,8 +161,9 @@ window.addEventListener('message', async (e) => {
           height,
           pixelRatio: 1,
           style: { transform: 'scale(1)', transformOrigin: 'top left' },
-          quality: 1.0,
-          backgroundColor: 'transparent',
+          type: 'image/jpeg',
+          quality: 0.97,
+          backgroundColor: '#ffffff',
           fontEmbedCSS: window.__cachedFontCss,
           filter: (node) => {
             if (node.tagName && node.tagName.toUpperCase() === 'IFRAME') return false;
@@ -159,9 +171,11 @@ window.addEventListener('message', async (e) => {
           }
         });
         
+        if (!blob) throw new Error("html-to-image returned a null blob.");
+        
         const domSnap = await createImageBitmap(blob);
-        const off = new OffscreenCanvas(width, height);
-        const ctx = off.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, width, height);
         ctx.drawImage(domSnap, 0, 0, width, height);
         domSnap.close();
         
@@ -240,6 +254,14 @@ export function loadIframeWithHtml(
     }
 
     const sandboxDomain = import.meta.env.VITE_SANDBOX_DOMAIN;
+    let isSettled = false;
+
+    const timeoutId = setTimeout(() => {
+      if (!isSettled) {
+        isSettled = true;
+        reject(new Error("Sandbox iframe failed to load (timeout after 10 seconds). Check your internet connection."));
+      }
+    }, 10000);
 
     if (sandboxDomain) {
       // Remote Sandbox Mode
@@ -251,7 +273,11 @@ export function loadIframeWithHtml(
           if (iframe.contentWindow) {
              iframe.contentWindow.postMessage({ type: 'render-sandbox', html: finalHtml }, '*');
           }
-          setTimeout(resolve, 200); 
+          if (!isSettled) {
+            isSettled = true;
+            clearTimeout(timeoutId);
+            setTimeout(resolve, 200); 
+          }
         }
       };
       
@@ -262,7 +288,11 @@ export function loadIframeWithHtml(
       // Local Dev Fallback (srcdoc)
       const onLoad = () => {
         iframe.removeEventListener("load", onLoad);
-        resolve();
+        if (!isSettled) {
+          isSettled = true;
+          clearTimeout(timeoutId);
+          resolve();
+        }
       };
       iframe.addEventListener("load", onLoad);
       iframe.srcdoc = finalHtml;
@@ -406,7 +436,7 @@ async function createMp4FrameEncoder(opts: Mp4FrameEncoderOpts): Promise<Mp4Fram
     height,
     bitrate: Math.min(targetBitrate, 120_000_000),
     framerate: fps,
-    latencyMode: "quality",
+    latencyMode: "realtime",
   });
 
   const totalDurationUs = Math.round((totalFrames / fps) * 1_000_000);
@@ -463,12 +493,12 @@ export async function renderStudioMp4(
 ): Promise<Blob> {
   onProgress({ stage: "preparing", message: "Uploading to Studio Backend..." });
 
-  const endpoint = "/api/render";
+  const endpoint = "/api/render-async";
   const cancelEndpoint = "/api/cancel";
 
-  const jobId = Math.random().toString(36).substring(2, 15);
+  let clientJobId = Math.random().toString(36).substring(2, 15);
   if (signal) {
-    signal.jobId = jobId;
+    signal.jobId = clientJobId;
     signal.cancelEndpoint = cancelEndpoint;
   }
 
@@ -490,7 +520,7 @@ export async function renderStudioMp4(
       panX: opts.panX,
       panY: opts.panY,
       exportScale: opts.exportScale,
-      jobId
+      jobId: clientJobId
     }),
     signal: abortController.signal,
   });
@@ -511,10 +541,62 @@ export async function renderStudioMp4(
     throw new Error(errorText);
   }
 
+  const data = await response.json();
+  const serverJobId = data.jobId; // This is the Smart ID from the Edge Proxy
+  if (signal) {
+    signal.jobId = serverJobId;
+  }
+
+  // Polling Loop
+  let consecutiveErrors = 0;
+  while (true) {
+    if (signal?.cancelled) throw new Error("Capture cancelled.");
+    
+    try {
+      const statusRes = await fetch(`/api/status/${serverJobId}`);
+      if (!statusRes.ok) throw new Error(`Status check failed: ${statusRes.status}`);
+      const statusData = await statusRes.json();
+      consecutiveErrors = 0; // reset on success
+
+      if (statusData.status === 'queued') {
+        onProgress({ stage: "preparing", message: `Queue Position: #${statusData.position}` });
+      } else if (statusData.status === 'processing') {
+        if (statusData.progress && statusData.progress.total > 0) {
+          onProgress({ 
+            stage: "capturing", 
+            current: statusData.progress.current, 
+            total: statusData.progress.total, 
+            message: "Rendering your video..." 
+          });
+        } else {
+          onProgress({ stage: "capturing", message: "Starting rendering engine..." });
+        }
+      } else if (statusData.status === 'done') {
+        break; // Ready for download!
+      } else if (statusData.status === 'error') {
+        // EXPLICIT SERVER ERROR: Throw completely outside the loop so we don't retry!
+        throw new Error("SERVER_FATAL:" + (statusData.error || "Server render failed."));
+      }
+    } catch (e: any) {
+      if (e.message && e.message.startsWith("SERVER_FATAL:")) {
+        throw new Error(e.message.replace("SERVER_FATAL:", "")); // Throw to handleExport instantly
+      }
+      consecutiveErrors++;
+      if (consecutiveErrors >= 5) {
+        throw new Error(`Connection to server lost. Tried 5 times (10 seconds). Details: ${e.message}`);
+      }
+      console.warn(`Status check transient error (Attempt ${consecutiveErrors}/5):`, e);
+    }
+    
+    await new Promise(r => setTimeout(r, 2000));
+  }
+
   if (signal?.cancelled) throw new Error("Capture cancelled.");
 
   onProgress({ stage: "encoding", message: "Downloading final MP4..." });
-  return await response.blob();
+  const downloadRes = await fetch(`/api/download/${serverJobId}`);
+  if (!downloadRes.ok) throw new Error("Failed to download video");
+  return await downloadRes.blob();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

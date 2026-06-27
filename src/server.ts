@@ -66,62 +66,125 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
   return brandedErrorResponse();
 }
 
+let globalServerIndex = 0;
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
       const url = new URL(request.url);
       
       // -- PROXY ARCHITECTURE: Intercept Studio Mode API requests at the Edge --
-      if ((url.pathname === '/api/render' || url.pathname.startsWith('/api/cancel')) && request.method === 'POST') {
+      const isStudioApi = url.pathname.startsWith('/api/render') || 
+                          url.pathname.startsWith('/api/status') || 
+                          url.pathname.startsWith('/api/download') ||
+                          url.pathname.startsWith('/api/cancel');
+
+      if (isStudioApi) {
         let apiKey = (env as any)?.STUDIO_API_KEY || (typeof process !== 'undefined' ? process.env?.STUDIO_API_KEY : undefined);
+        let backendStr = (env as any)?.STUDIO_BACKEND_URL || (typeof process !== 'undefined' ? process.env?.STUDIO_BACKEND_URL : undefined);
         
-        // Local Dev Fallback: If Vite didn't inject it, read it directly from .env (only works in local Node.js environment)
-        if (!apiKey && typeof process !== 'undefined') {
+        if (typeof process !== 'undefined') {
           try {
             const fs = await import('fs');
             const envFile = fs.readFileSync('.env', 'utf-8');
-            const match = envFile.match(/STUDIO_API_KEY\s*=\s*"?([^"\n]+)"?/);
-            if (match) apiKey = match[1];
-          } catch (e) {
-            // Ignore if in production edge environment where fs doesn't exist
+            if (!apiKey) {
+              const matchKey = envFile.match(/STUDIO_API_KEY\s*=\s*"?([^"\n]+)"?/);
+              if (matchKey) apiKey = matchKey[1];
+            }
+            if (!backendStr) {
+              const matchUrl = envFile.match(/STUDIO_BACKEND_URL\s*=\s*"?([^"\n]+)"?/);
+              if (matchUrl) backendStr = matchUrl[1];
+            }
+          } catch (e) {}
+        }
+        
+        if (apiKey) apiKey = apiKey.replace(/^["']|["']$/g, '').trim();
+        if (!backendStr) {
+          return new Response(JSON.stringify({ error: "Server Configuration Error: STUDIO_BACKEND_URL is not set." }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
+        
+        // Parse the server pool
+        const backends = backendStr.split(',').map(s => s.trim()).filter(Boolean);
+        
+        let targetBackend = backends[0];
+        let backendJobId = '';
+        
+        // If this is a status, download, or cancel request, extract the routing info from the smart ID
+        const match = url.pathname.match(/^\/api\/(status|download|cancel)\/(.+)$/);
+        if (match) {
+          const action = match[1];
+          const rawId = match[2];
+          
+          if (rawId.includes('--')) {
+            // Smart ID format: base64Url--backendId
+            const parts = rawId.split('--');
+            targetBackend = atob(parts[0]);
+            backendJobId = parts.slice(1).join('--');
+            url.pathname = `/api/${action}/${backendJobId}`;
+          } else {
+            // Fallback for old IDs or sync render
+            url.pathname = `/api/${action}/${rawId}`;
           }
+        } else if (url.pathname === '/api/render-async' || url.pathname === '/api/render') {
+          // New render request: Load balance strictly round-robin
+          globalServerIndex = (globalServerIndex + 1) % backends.length;
+          targetBackend = backends[globalServerIndex];
         }
-        
-        // Aggressively strip any surrounding quotes and whitespace/carriage returns
-        if (apiKey) {
-          apiKey = apiKey.replace(/^["']|["']$/g, '').trim();
-        }
-        
-        console.log(`[Proxy] Final API Key to send: [${apiKey}]`);
-        const backendStr = (env as any)?.VITE_STUDIO_BACKEND_URL || (typeof process !== 'undefined' ? process.env?.VITE_STUDIO_BACKEND_URL : undefined);
-        
-        const backendBase = backendStr || "https://vedavyas1235-animateit.hf.space";
-        const targetUrl = new URL(url.pathname, backendBase.replace(/\/api\/(render|cancel)$/, ''));
+
+        let targetUrlStr = targetBackend.replace(/\/$/, '') + url.pathname;
+        if (url.search) targetUrlStr += url.search;
+        const targetUrl = new URL(targetUrlStr);
 
         const fetchOptions: any = {
-          method: 'POST',
+          method: request.method,
           headers: {
             'Content-Type': request.headers.get('Content-Type') || 'application/json',
             ...(apiKey ? { 'Authorization': `Bearer ${apiKey}` } : {})
-          },
-          body: request.body, // Stream the body directly
-          // @ts-ignore - duplex is needed in some node-fetch environments for streaming bodies
-          duplex: 'half'
+          }
         };
 
-        // Node 18+ undici fetch has a default 5-minute headersTimeout which kills long CPU renders.
-        // We dynamically import undici to override it to 1 hour (3600000 ms)
+        if (request.method !== 'GET' && request.method !== 'HEAD') {
+          // If we need active failover later, we should clone the body.
+          // For now, stream it directly to the chosen server.
+          fetchOptions.body = request.body;
+          fetchOptions.duplex = 'half';
+        }
+
+        // Node 18+ undici fetch timeout override
         if (typeof process !== 'undefined') {
           try {
             const { Agent } = await import('undici');
             fetchOptions.dispatcher = new Agent({ headersTimeout: 3600000, bodyTimeout: 3600000 });
-          } catch(e) {
-            console.warn("Could not load undici to override fetch timeout");
-          }
+          } catch(e) {}
         }
 
-        // Forward the request
-        return await fetch(targetUrl.toString(), fetchOptions);
+        try {
+          const response = await fetch(targetUrl.toString(), fetchOptions);
+          
+          // Intercept the /api/render-async response to inject our Smart ID
+          if (url.pathname === '/api/render-async' && response.status === 200) {
+            const data = await response.json();
+            if (data.jobId) {
+              const b64Host = btoa(targetBackend);
+              data.jobId = `${b64Host}--${data.jobId}`;
+            }
+            return new Response(JSON.stringify(data), {
+              status: 200,
+              headers: { 'Content-Type': 'application/json' }
+            });
+          }
+          
+          return response;
+        } catch (err: any) {
+          console.error(`[Proxy] Failed to reach backend ${targetBackend}:`, err);
+          return new Response(JSON.stringify({ error: 'Backend server unreachable', details: err.message }), {
+            status: 502,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        }
       }
 
       const handler = await getServerEntry();

@@ -25,6 +25,12 @@ export function Uploader({ onFile }: Props) {
         return;
       }
       const text = await file.text();
+      const sample = text.slice(0, 1000).toLowerCase();
+      if (!sample.includes('<html') && !sample.includes('<!doctype') && !sample.includes('<head') && !sample.includes('<body')) {
+        setError("This doesn't appear to be a valid HTML file. Please check the file contents.");
+        return;
+      }
+      
       onFile(file.name, text);
     },
     [onFile],
