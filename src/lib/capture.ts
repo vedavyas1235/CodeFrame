@@ -1,4 +1,4 @@
-import htmlToImageRaw from "html-to-image/dist/html-to-image.js?raw";
+import html2canvasRaw from "html2canvas/dist/html2canvas.min.js?raw";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TIME SHIM — injected into the iframe to give us synthetic clock control
@@ -246,13 +246,13 @@ export function loadIframeWithHtml(
     });
 
     if (needShim) {
-      // Escape </script> tags in htmlToImageRaw to prevent breaking the injected script block
-      const safeHtmlToImage = htmlToImageRaw.replace(/<\/script>/gi, '<\\/script>');
+      // Escape </script> tags in html2canvasRaw to prevent breaking the injected script block
+      const safeHtml2Canvas = html2canvasRaw.replace(/<\/script>/gi, '<\\/script>');
       const injection = `
         <script>${TIME_SHIM}</script>
         <script>
           (function(setTimeout, setInterval, clearTimeout, clearInterval, Date, performance, requestAnimationFrame, cancelAnimationFrame) {
-            ${safeHtmlToImage}
+            ${safeHtml2Canvas}
           })(window.__nativeSetTimeout, window.__nativeSetInterval, window.__nativeClearTimeout, window.__nativeClearInterval, window.__nativeDate, window.__nativePerformance, window.__origRaf, window.__origCancelRaf);
         </script>
         <script>${CAPTURE_AGENT}</script>
