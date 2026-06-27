@@ -156,15 +156,12 @@ window.addEventListener('message', async (e) => {
           }
         }
 
-        const dpr = window.devicePixelRatio || 1;
         const blob = await window.htmlToImage.toBlob(document.documentElement, {
-          width: width * dpr,
-          height: height * dpr,
+          width: width,
+          height: height,
           pixelRatio: 1,
-          style: { transform: 'scale(' + dpr + ')', transformOrigin: 'top left' },
           type: 'image/jpeg',
           quality: 0.97,
-          backgroundColor: '#ffffff',
           fontEmbedCSS: window.__cachedFontCss,
           filter: (node) => {
             if (node.tagName && node.tagName.toUpperCase() === 'IFRAME') return false;
@@ -175,8 +172,8 @@ window.addEventListener('message', async (e) => {
         if (!blob) throw new Error("html-to-image returned a null blob.");
         
         const domSnap = await createImageBitmap(blob);
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, width, height);
+        // Removed hardcoded white background so the user's actual CSS background works
+        ctx.clearRect(0, 0, width, height); 
         ctx.drawImage(domSnap, 0, 0, width, height);
         domSnap.close();
         
