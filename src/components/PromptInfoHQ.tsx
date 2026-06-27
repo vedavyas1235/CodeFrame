@@ -10,15 +10,15 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-const PROMPT_TEXT = `This HTML file will be fed into a DOM-snapshot rendering engine to generate a high-quality MP4 video. To ensure perfect rendering without missing fonts, frozen animations, or CORS crashes, you MUST adhere strictly to these rules:
+const PROMPT_TEXT = `This HTML file will be fed into a secure DOM-snapshot rendering engine to generate a high-quality MP4 video. To ensure perfect rendering and prevent security crashes, you MUST adhere strictly to these rules:
 
-1. **USE JS ANIMATIONS (NO CSS TRANSITIONS)**: You are strictly forbidden from using CSS \`transition\` for animations. Because the engine freezes time to take DOM snapshots, CSS transitions (which rely on the physical real-time clock) will permanently freeze at 0%. You MUST use JavaScript-based animation libraries (like GSAP or Anime.js) or \`requestAnimationFrame\` instead. CSS \`@keyframes\` are allowed but JS animations are strongly preferred.
-2. **CORS FOR EXTERNAL FONTS**: If you include external fonts (e.g., Google Fonts), you MUST add \`crossorigin="anonymous"\` to the \`<link>\` tag. Without this, the engine will throw a SecurityError when trying to embed the font rules, causing all text to break.
-3. **MODERN CDNS FOR IMAGES/EMOJIS**: If you inject SVGs or emojis (like Twemoji), ensure you use a working CDN that provides CORS headers (e.g., \`jsdelivr\` or \`unpkg\`). Never use discontinued CDNs like \`maxcdn\`.
-4. **NO CROSS-ORIGIN IFRAMES**: Do not include iframes pointing to external sites (like YouTube embeds). The engine runs in a secure sandbox and cannot serialize cross-origin iframes, causing a crash.
+1. **INLINE VANILLA JS/CSS ONLY**: Do not use external Javascript CDNs (e.g., \`<script src="...gsap.js">\`). The security sandbox will instantly block them. All animations MUST be built using 100% inline Vanilla JS (\`requestAnimationFrame\`) or inline CSS.
+2. **NO CSS TRANSITIONS**: Do not use CSS \`transition\`, as the engine's time-scrubber will freeze them. Use JS \`requestAnimationFrame\` for timeline sequences. (CSS \`@keyframes\` are allowed for continuous loops).
+3. **GOOGLE FONTS ARE ALLOWED**: You may load external CSS stylesheets (like Google Fonts). You MUST add \`crossorigin="anonymous"\` to the \`<link>\` tag to prevent SecurityErrors.
+4. **MODERN CDNS FOR IMAGES/EMOJIS**: If you inject SVGs or emojis, ensure you use a working CDN that provides CORS headers (e.g., \`jsdelivr\` or \`unpkg\`). 
 5. **SINGLE HTML FILE**: All HTML, CSS, and JavaScript MUST be contained within a single standalone \`index.html\` file. Do not output separate \`.css\` or \`.js\` files.
 
-Please structure the UI with beautiful, modern aesthetics, but ensure the underlying code adheres to these constraints.`;
+Please structure the UI with beautiful, modern aesthetics, but ensure the underlying code adheres to these security constraints.`;
 
 export function PromptInfoHQ() {
   const [copied, setCopied] = useState(false);
