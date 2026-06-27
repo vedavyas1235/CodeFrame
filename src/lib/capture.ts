@@ -49,7 +49,7 @@ export const TIME_SHIM = `
   };
   window.clearInterval = function(id){ intervalCallbacks = intervalCallbacks.filter(function(x){ return x.id !== id; }); };
 
-  window.__advanceVTime = function(target){
+  window.__advanceVTime = async function(target){
     var STEP = 8;
     while (vtime < target) {
       vtime = Math.min(vtime + STEP, target);
@@ -102,7 +102,7 @@ window.addEventListener('message', async (e) => {
     try {
       const { timeMs, mode, width, height } = e.data;
       if (typeof window.__advanceVTime === 'function') {
-        window.__advanceVTime(timeMs);
+        await window.__advanceVTime(timeMs);
       }
       
       await new Promise(r => {
@@ -376,21 +376,32 @@ function shouldSampleSignature(frameIndex: number, totalFrames: number): boolean
   return checkpoints.includes(frameIndex);
 }
 
-/** Fast 32-pixel column sample for duplicate-frame detection. */
+/** Fast cross-section sample for duplicate-frame detection. */
 function canvasSignature(canvas: HTMLCanvasElement): string {
   const ctx = canvas.getContext("2d");
   if (!ctx) return "";
   const w = canvas.width;
   const h = canvas.height;
-  const step = Math.max(1, Math.floor(h / 32));
-  const data = ctx.getImageData(Math.floor(w / 2), 0, 1, h);
+  const stepX = Math.max(1, Math.floor(w / 16));
+  const stepY = Math.max(1, Math.floor(h / 16));
   let sig = "";
-  for (let y = 0; y < h; y += step) {
+  
+  // Vertical strip
+  const dataY = ctx.getImageData(Math.floor(w / 2), 0, 1, h);
+  for (let y = 0; y < h; y += stepY) {
     const base = y * 4;
-    sig += data.data[base].toString(16).padStart(2, "0");
-    sig += data.data[base + 1].toString(16).padStart(2, "0");
-    sig += data.data[base + 2].toString(16).padStart(2, "0");
+    sig += dataY.data[base].toString(16).padStart(2, "0");
+    sig += dataY.data[base + 1].toString(16).padStart(2, "0");
   }
+  
+  // Horizontal strip
+  const dataX = ctx.getImageData(0, Math.floor(h / 2), w, 1);
+  for (let x = 0; x < w; x += stepX) {
+    const base = x * 4;
+    sig += dataX.data[base].toString(16).padStart(2, "0");
+    sig += dataX.data[base + 1].toString(16).padStart(2, "0");
+  }
+  
   return sig;
 }
 
