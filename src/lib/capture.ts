@@ -156,16 +156,12 @@ window.addEventListener('message', async (e) => {
           }
         }
 
-        // Force DOM backgrounds to be transparent so we can layer them over canvases
-        const oldBodyBg = document.body.style.getPropertyValue('background');
-        const oldHtmlBg = document.documentElement.style.getPropertyValue('background');
-        document.body.style.setProperty('background', 'transparent', 'important');
-        document.documentElement.style.setProperty('background', 'transparent', 'important');
-
-        const domSnapCanvas = await window.htmlToImage.toCanvas(document.documentElement, {
+        const blob = await window.htmlToImage.toBlob(document.documentElement, {
           width: width,
           height: height,
           pixelRatio: 1,
+          type: 'image/jpeg',
+          quality: 0.97,
           fontEmbedCSS: window.__cachedFontCss,
           filter: (node) => {
             if (node.tagName && node.tagName.toUpperCase() === 'IFRAME') return false;
@@ -173,12 +169,14 @@ window.addEventListener('message', async (e) => {
           }
         });
         
-        document.body.style.setProperty('background', oldBodyBg);
-        document.documentElement.style.setProperty('background', oldHtmlBg);
+        if (!blob) throw new Error("html-to-image returned a null blob.");
         
+        const domSnap = await createImageBitmap(blob);
+        // Removed hardcoded white background so the user's actual CSS background works
         ctx.clearRect(0, 0, width, height); 
+        ctx.drawImage(domSnap, 0, 0, width, height);
+        domSnap.close();
         
-        // 1. Draw all native canvases/videos FIRST (as background layers)
         const canvases = Array.from(document.querySelectorAll("canvas"));
         const videos = Array.from(document.querySelectorAll("video"));
         const drawEl = (el) => {
@@ -189,9 +187,6 @@ window.addEventListener('message', async (e) => {
         };
         canvases.forEach(drawEl);
         videos.forEach(drawEl);
-        
-        // 2. Draw the transparent DOM snapshot ON TOP of the canvases
-        ctx.drawImage(domSnapCanvas, 0, 0, width, height);
         
         bitmap = off.transferToImageBitmap();
       }
@@ -388,16 +383,16 @@ function canvasSignature(canvas: HTMLCanvasElement): string {
   if (!ctx) return "";
   const w = canvas.width;
   const h = canvas.height;
-  // Sample a diagonal line of 100 pixels across the screen
-  // This is vastly more reliable than 16 grid points, as a diagonal line 
-  // guarantees intersecting with centered text blocks and UI elements.
   let sig = "";
-  for (let i = 0; i < 100; i++) {
-    const x = Math.floor((w * i) / 100);
-    const y = Math.floor((h * i) / 100);
-    const d = ctx.getImageData(x, y, 1, 1).data;
-    sig += d[0].toString(16).padStart(2, "0");
-    sig += d[1].toString(16).padStart(2, "0");
+  for (let gy = 1; gy <= 4; gy++) {
+    for (let gx = 1; gx <= 4; gx++) {
+      const x = Math.floor(w * gx / 5);
+      const y = Math.floor(h * gy / 5);
+      const d = ctx.getImageData(x, y, 1, 1).data;
+      sig += d[0].toString(16).padStart(2, "0");
+      sig += d[1].toString(16).padStart(2, "0");
+      sig += d[2].toString(16).padStart(2, "0");
+    }
   }
   return sig;
 }
