@@ -64,9 +64,19 @@ function AboutPage() {
                   <li>Runs entirely offline.</li>
                 </ul>
               </div>
-              <div className="bg-muted/50 rounded-lg p-3 text-sm">
-                <strong className="text-foreground block mb-1">Note / Limitations</strong>
-                The rendering process takes significantly longer. Because it uses a completely different frame-by-frame mechanism, the animations during the live preview may appear frozen or comparatively not as smooth as native playback.
+              <div className="bg-muted/50 border border-border/40 rounded-lg p-3 text-sm">
+                <strong className="text-foreground block mb-1">Important Limitations & Security</strong>
+                <ul className="list-disc pl-5 mt-2 space-y-1.5 text-muted-foreground">
+                  <li>
+                    <strong className="text-foreground/90 font-medium">No External Scripts:</strong> To protect your device, this mode runs in a strict security sandbox. External CDNs (like GSAP or Anime.js) are instantly blocked. All code MUST be inline Vanilla JS/CSS.
+                  </li>
+                  <li>
+                    <strong className="text-foreground/90 font-medium">No CSS Transitions:</strong> Because time is manually frozen during capture, CSS <code className="text-[10px] bg-background/50 border border-border/50 px-1 py-0.5 rounded">transition</code> animations will freeze. Use <code className="text-[10px] bg-background/50 border border-border/50 px-1 py-0.5 rounded">requestAnimationFrame</code> instead.
+                  </li>
+                  <li>
+                    The rendering process takes significantly longer, and the live preview may appear choppy during export.
+                  </li>
+                </ul>
               </div>
             </div>
           </Section>
