@@ -363,45 +363,40 @@ function requestIframeFrame(
   });
 }
 
-/** Pick a few representative frame indices for duplicate-detection sampling. */
+/**
+ * Sample frames only from the middle third of the animation (35%–75%).
+ * Skipping the first 35% avoids false-positives from legitimate fade-in
+ * sequences where all early frames are intentionally black/invisible.
+ */
 function shouldSampleSignature(frameIndex: number, totalFrames: number): boolean {
   if (totalFrames <= 8) return true;
-  const checkpoints = [
-    Math.floor(totalFrames * 0.1),
-    Math.floor(totalFrames * 0.3),
-    Math.floor(totalFrames * 0.5),
-    Math.floor(totalFrames * 0.7),
-    Math.floor(totalFrames * 0.9),
-  ];
-  return checkpoints.includes(frameIndex);
+  const start = Math.floor(totalFrames * 0.35);
+  const mid   = Math.floor(totalFrames * 0.55);
+  const end   = Math.floor(totalFrames * 0.75);
+  return frameIndex === start || frameIndex === mid || frameIndex === end;
 }
 
-/** Fast cross-section sample for duplicate-frame detection. */
+/**
+ * Hash a 4x4 grid of pixels evenly distributed across the whole canvas.
+ * This reliably detects change in any area of the frame — corners, edges,
+ * or center — regardless of where the animation's elements happen to be.
+ */
 function canvasSignature(canvas: HTMLCanvasElement): string {
   const ctx = canvas.getContext("2d");
   if (!ctx) return "";
   const w = canvas.width;
   const h = canvas.height;
-  const stepX = Math.max(1, Math.floor(w / 16));
-  const stepY = Math.max(1, Math.floor(h / 16));
   let sig = "";
-  
-  // Vertical strip
-  const dataY = ctx.getImageData(Math.floor(w / 2), 0, 1, h);
-  for (let y = 0; y < h; y += stepY) {
-    const base = y * 4;
-    sig += dataY.data[base].toString(16).padStart(2, "0");
-    sig += dataY.data[base + 1].toString(16).padStart(2, "0");
+  for (let gy = 1; gy <= 4; gy++) {
+    for (let gx = 1; gx <= 4; gx++) {
+      const x = Math.floor(w * gx / 5);
+      const y = Math.floor(h * gy / 5);
+      const d = ctx.getImageData(x, y, 1, 1).data;
+      sig += d[0].toString(16).padStart(2, "0");
+      sig += d[1].toString(16).padStart(2, "0");
+      sig += d[2].toString(16).padStart(2, "0");
+    }
   }
-  
-  // Horizontal strip
-  const dataX = ctx.getImageData(0, Math.floor(h / 2), w, 1);
-  for (let x = 0; x < w; x += stepX) {
-    const base = x * 4;
-    sig += dataX.data[base].toString(16).padStart(2, "0");
-    sig += dataX.data[base + 1].toString(16).padStart(2, "0");
-  }
-  
   return sig;
 }
 
@@ -727,7 +722,13 @@ export async function renderFrameSteppedMp4(
 
   const encoder = await createMp4FrameEncoder({ width: outW, height: outH, fps, totalFrames });
   onProgress({ stage: "preparing", message: "Capturing DOM frame-by-frame (Offline)…" });
-  const sigs = new Set<string>();
+
+  // Baseline signature of frame 0 — the known initial state of the animation.
+  // We compare mid-animation frames against this to detect change.
+  // This avoids false-positives from animations that legitimately start black
+  // and stay that way for the first few hundred milliseconds.
+  let baselineSig: string | null = null;
+  let animationDetected = false;
 
   const out = document.createElement("canvas");
   out.width = outW;
@@ -756,7 +757,14 @@ export async function renderFrameSteppedMp4(
       ctx.drawImage(bitmap, 0, 0, width, height);
       ctx.restore();
 
-      if (shouldSampleSignature(i, totalFrames)) sigs.add(canvasSignature(out));
+      // Capture frame 0 as the baseline (initial, possibly all-black state).
+      // For mid-animation frames, check if the canvas differs from the baseline.
+      if (i === 0) {
+        baselineSig = canvasSignature(out);
+      } else if (!animationDetected && shouldSampleSignature(i, totalFrames)) {
+        const sig = canvasSignature(out);
+        if (sig !== baselineSig) animationDetected = true;
+      }
       
       const timestampUs = i * frameDurationUs;
       await encoder.addFrame(out, i, timestampUs, frameDurationUs);
@@ -770,7 +778,7 @@ export async function renderFrameSteppedMp4(
       });
     }
     
-    if (sigs.size <= 1 && totalFrames > 4) {
+    if (!animationDetected && totalFrames > 4) {
       throw new Error(IDENTICAL_FRAMES_MSG);
     }
     
