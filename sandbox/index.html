@@ -4,21 +4,25 @@
   <meta charset="utf-8">
   <title>CodeFrame Sandbox</title>
   <script>
-    // Listen for the HTML from CodeFrame
     window.addEventListener('message', function(e) {
       if (e.data && e.data.type === 'render-sandbox') {
         
-        // Wait for all injected assets to finish downloading/painting
-        window.addEventListener('load', function() {
-          window.parent.postMessage({ type: 'sandbox-loaded' }, '*');
-        }, { once: true });
+        const trackerScript = '<scr' + 'ipt>' + `
+          window.addEventListener('load', function() {
+            window.parent.postMessage({ type: 'sandbox-loaded' }, '*');
+          });
+          setTimeout(function() {
+             if (document.readyState === 'complete') {
+               window.parent.postMessage({ type: 'sandbox-loaded' }, '*');
+             }
+          }, 100);
+        ` + '</scr' + 'ipt>';
         
         document.open();
-        document.write(e.data.html);
+        document.write(e.data.html + trackerScript);
         document.close();
       }
     });
-    // Tell CodeFrame we are ready to receive HTML
     window.parent.postMessage({ type: 'sandbox-ready' }, '*');
   </script>
 </head>
