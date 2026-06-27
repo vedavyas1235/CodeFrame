@@ -233,8 +233,17 @@ export function loadIframeWithHtml(
   html: string,
   needShim: boolean,
 ): Promise<void> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     let finalHtml = html;
+
+    // Fix html-to-image SecurityError by forcing CORS on all external stylesheets
+    finalHtml = finalHtml.replace(/<link([^>]+)>/gi, (m, p1) => {
+      if (p1.toLowerCase().includes('rel="stylesheet"') && !p1.toLowerCase().includes('crossorigin')) {
+        return `<link${p1} crossorigin="anonymous">`;
+      }
+      return m;
+    });
+
     if (needShim) {
       // Escape </script> tags in htmlToImageRaw to prevent breaking the injected script block
       const safeHtmlToImage = htmlToImageRaw.replace(/<\/script>/gi, '<\\/script>');
@@ -247,9 +256,9 @@ export function loadIframeWithHtml(
         </script>
         <script>${CAPTURE_AGENT}</script>
       `;
-      finalHtml = html.replace(/<head[^>]*>/i, (m) => m + injection);
-      if (finalHtml === html) {
-        finalHtml = injection + html;
+      finalHtml = finalHtml.replace(/<head[^>]*>/i, (m) => m + injection);
+      if (!finalHtml.includes(injection)) {
+        finalHtml = injection + finalHtml;
       }
     }
 

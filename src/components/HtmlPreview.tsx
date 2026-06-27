@@ -120,7 +120,7 @@ export const HtmlPreview = forwardRef<HTMLIFrameElement, Props>(function HtmlPre
           <iframe
             ref={ref}
             title="HTML preview"
-            sandbox="allow-scripts"
+            sandbox="allow-scripts allow-same-origin"
             className="absolute top-0 left-0 block border-0 bg-white"
             style={{ width: `${width}px`, height: `${height}px` }}
           />
