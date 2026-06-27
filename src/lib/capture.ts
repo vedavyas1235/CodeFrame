@@ -279,14 +279,15 @@ export function loadIframeWithHtml(
       
       const onMessage = (e: MessageEvent) => {
         if (e.data?.type === 'sandbox-ready') {
-          window.removeEventListener('message', onMessage);
           if (iframe.contentWindow) {
              iframe.contentWindow.postMessage({ type: 'render-sandbox', html: finalHtml }, '*');
           }
+        } else if (e.data?.type === 'sandbox-loaded') {
+          window.removeEventListener('message', onMessage);
           if (!isSettled) {
             isSettled = true;
             clearTimeout(timeoutId);
-            setTimeout(resolve, 200); 
+            resolve();
           }
         }
       };

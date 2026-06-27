@@ -7,8 +7,11 @@
     // Listen for the HTML from CodeFrame
     window.addEventListener('message', function(e) {
       if (e.data && e.data.type === 'render-sandbox') {
-        // Optionally verify origin here if strictly needed
-        // if (!e.origin.includes('codeframe.com') && !e.origin.includes('localhost')) return;
+        
+        // Wait for all injected assets to finish downloading/painting
+        window.addEventListener('load', function() {
+          window.parent.postMessage({ type: 'sandbox-loaded' }, '*');
+        }, { once: true });
         
         document.open();
         document.write(e.data.html);
