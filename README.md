@@ -49,29 +49,29 @@ CodeFrame offers **three capture modes**, each designed for a different use case
 <br/>
 
 ### ⚡ Quick Mode
-> *Best for: Pure canvas and WebGL animations*
+> *Best for: Pure graphics and visual effects*
 
-When you upload a canvas-based animation, Quick Mode takes over the browser's internal clock and renders every frame at exactly the right timestamp — deterministically and instantly. There are no dropped frames, no lag, and no dependency on your machine's performance. The animation is stepped forward frame-by-frame in a controlled loop and encoded directly to MP4.
+When you upload a graphics-based animation, Quick Mode takes over the internal clock and renders every frame at exactly the right timestamp — deterministically and instantly. There are no dropped frames, no lag, and no dependency on your machine's performance. The animation is stepped forward frame-by-frame in a controlled loop and encoded directly to MP4.
 
-**Limitation:** Quick Mode only works with animations drawn entirely on a `<canvas>` element. HTML text, CSS layouts, and DOM elements will not appear in the output.
+**Limitation:** Quick Mode only works with animations drawn as pure mathematical graphics. Standard text and complex page layouts will not appear in the output.
 
 <br/>
 
 ### 🎞️ High Quality Mode
-> *Best for: CSS animations, DOM text, complex HTML layouts — all offline*
+> *Best for: Standard text, custom fonts, complex layouts — all offline*
 
-High Quality Mode renders HTML pages that rely on the DOM — text, styled elements, CSS keyframes, and layered layouts. It works by taking a high-fidelity snapshot of the rendered page for every single frame, compiling those snapshots into an MP4 entirely in your browser. Your file never leaves your device.
+High Quality Mode flawlessly captures heavy elements like text, custom styling, and layered layouts. It works by taking a high-fidelity visual snapshot of the page for every single frame, compiling those snapshots into an MP4 entirely in your browser. Your file never leaves your device.
 
 **Limitation:** Because every frame is individually rendered, the export takes significantly longer than Quick Mode. Keep the tab visible during export — browsers pause rendering on hidden tabs.
 
 <br/>
 
 ### 👑 Studio Mode
-> *Best for: Complex animations, external fonts, professional-grade exports*
+> *Best for: Heavy workloads, external fonts, professional-grade exports*
 
-Studio Mode sends your HTML to a dedicated headless Chromium backend that renders the animation at full GPU speed with perfect frame timing. It supports external fonts, third-party libraries (GSAP, Three.js, Anime.js), and any feature that requires a real browser environment. The output is always silky-smooth regardless of how complex the animation is.
+Studio Mode sends your animation to a dedicated cloud-based rendering pipeline that processes the animation at maximum speed with perfect frame timing. It supports external fonts, heavy third-party libraries, and any feature that requires a professional environment. The output is always silky-smooth regardless of how complex the animation is.
 
-**Limitation:** Requires an internet connection to reach the rendering backend. 3D canvas (WebGL) support is actively being expanded.
+**Limitation:** Requires an internet connection to reach the rendering servers. Complex 3D graphics support is actively being expanded.
 
 <br/>
 
@@ -214,13 +214,13 @@ CodeFrame/
 
 | Feature | Quick Mode | High Quality | Studio Mode |
 |---|:---:|:---:|:---:|
-| Canvas / WebGL animations | ✅ | ✅ | ✅ |
-| HTML text & CSS layouts | ❌ | ✅ | ✅ |
-| External fonts & libraries | ❌ | ⚠️ CORS risk | ✅ |
+| Pure graphics & visual effects | ✅ | ✅ | ✅ |
+| Standard text & complex layouts | ❌ | ✅ | ✅ |
+| External fonts & heavy libraries | ❌ | ⚠️ Slower rendering | ✅ |
 | Runs entirely offline | ✅ | ✅ | ❌ |
 | Export speed | 🚀 Instant | 🐢 Slow | ⚡ Fast |
 | Max resolution | 1080p | 1080p | 2K |
-| Recommended for | Canvas art | CSS animations | Professional work |
+| Recommended for | Simple graphics | Complex designs | Professional work |
 
 <br/>
 
