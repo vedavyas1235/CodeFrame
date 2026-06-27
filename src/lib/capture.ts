@@ -706,18 +706,18 @@ export async function renderFrameSteppedMp4(
   onProgress({ stage: "preparing", message: "Capturing DOM frame-by-frame (Offline)…" });
   const sigs = new Set<string>();
 
+  const out = document.createElement("canvas");
+  out.width = outW;
+  out.height = outH;
+  const ctx = out.getContext("2d");
+  if (!ctx) throw new Error("2D context unavailable.");
+
   try {
     for (let i = 0; i < totalFrames; i++) {
       if (signal?.cancelled) throw new Error("Capture cancelled.");
       
       const timeMs = i * frameIntervalMs;
       const bitmap = await requestIframeFrame(iframe, timeMs, 'hq', width, height);
-      
-      const out = document.createElement("canvas");
-      out.width = outW;
-      out.height = outH;
-      const ctx = out.getContext("2d");
-      if (!ctx) throw new Error("2D context unavailable.");
 
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, outW, outH);
